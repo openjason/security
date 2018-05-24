@@ -69,10 +69,11 @@ target_emailaddr = []
 
 target_volatility = []
 target_timerange = []
-
+target_onduty = []
 last_first_price = []
 last_secondary_price = []
-exchage_ready = []
+exchage_done = []
+
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(message)s',
@@ -98,6 +99,7 @@ for i in range(1,target_total+1):
         target_emailaddr.append(cf.get(cfstr,'to_email_addr'))
         target_volatility.append(cf.get(cfstr,'volatility'))
         target_timerange.append(cf.get(cfstr,'timerange'))
+        target_onduty.append(cf.get(cfstr,'onduty'))
 
         #新交易类型，需配置初始值
         if cf.get(cfstr, 'dk_flag') == 'dkbuy' or cf.get(cfstr, 'dk_flag') == 'tpsale':
@@ -107,7 +109,7 @@ for i in range(1,target_total+1):
             last_first_price.append(8888)
             last_secondary_price.append(8888)
 
-        exchage_ready.append(True)
+        exchage_done.append(True)
 
     except:
         logging.warning("conf.ini 配置有误，参数:"+cfstr)
@@ -301,7 +303,7 @@ def get_current(http):
 #对目标进行轮询,检测当前价格与设定dk价格进行比较,如最新价及上两次价格都满足条件,则进行交易操作.
 #对目标dk值设置采用相反的比较,符合条件(差为正)则执行操作.否则记录更新上两次价格.
 def dk_detect():
-    global exchage_ready
+    global exchage_done
     global target_total
     global target_dk_value
     global target_dk_amount
@@ -322,11 +324,11 @@ def dk_detect():
         dk_value = float(target_dk_value[i])
         dk_amount = int(target_dk_amount[i])
         id = target_id [i]
+
         last_one_value = last_first_price[i]
         last_two_value = last_secondary_price[i]
 
         time.sleep(1.7)
-
         new_price_str_raw = get_from_site(httpa,httpb,httpc)
 
         if "|" in new_price_str_raw:
@@ -344,11 +346,11 @@ def dk_detect():
             #计划买入,之前价格检测２次均符合条件，执行交易
             dk_gap = round(new_price - dk_value,3)
             if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
-                if exchage_ready[i]:
+                if exchage_done[i] and is_exchage_time(i):
                     logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
                     stock_buy(id,str(dk_amount))
-                    exchage_ready[i] = False
-                    send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
+                    exchage_done[i] = False
+                    send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
             else:
                 last_secondary_price[i] = last_first_price[i]
                 last_first_price[i] = new_price
@@ -357,11 +359,11 @@ def dk_detect():
         elif dk_flag == 'tpbuy': ##到目标价，买
             dk_gap = round(dk_value - new_price, 3)
             if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
-                if exchage_ready[i]:
+                if exchage_done[i] and is_exchage_time(i):
                     logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
                     stock_buy(id,str(dk_amount))
-                    exchage_ready[i] = False
-                    send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
+                    exchage_done[i] = False
+                    send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
             else:
                 last_secondary_price[i] = last_first_price[i]
                 last_first_price[i] = new_price
@@ -371,11 +373,11 @@ def dk_detect():
             #计划卖出，之前价格检测２次均符合条件，执行交易
             dk_gap = round(dk_value - new_price, 3)
             if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
-                if exchage_ready[i]:
+                if exchage_done[i] and is_exchage_time(i):
                     logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
                     stock_sale(id,str(dk_amount))
-                    exchage_ready[i] = False
-                    send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
+                    exchage_done[i] = False
+                    send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
             else:
                 last_secondary_price[i] = last_first_price[i]
                 last_first_price[i] = new_price
@@ -384,11 +386,11 @@ def dk_detect():
         elif dk_flag == 'tpsale':   #到目标价，卖
             dk_gap = round(new_price - dk_value,3)
             if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
-                if exchage_ready[i]:
+                if exchage_done[i] and is_exchage_time(i):
                     logging.info ("Excute exchage......" + id + dk_flag + ":" +str(dk_amount))
                     stock_sale(id,str(dk_amount))
-                    exchage_ready[i] = False
-                    send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
+                    exchage_done[i] = False
+                    send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
             else:
                 last_secondary_price[i] = last_first_price[i]
                 last_first_price[i] = new_price
@@ -417,6 +419,14 @@ def show_setting():
         print(str(i + 1) + ":" + str(id) + "|" + " " + "|" + dk_flag + "_" + str(dk_amount) + " value:"
               + str(dk_value) + "|" + str(httpa) + "|" + str(httpb))
 
+def is_exchage_time(i):
+    str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
+    if (int(str_time[9:16]) in range(92700, 113800) or int(str_time[9:16]) in range(125700, 150800)):
+        return True
+    else:
+        logging.info(str_time + " error, out of exchange time.")
+        return False
+
 if __name__ == "__main__":
     logging.info(VERSION)
     show_setting()
@@ -424,7 +434,7 @@ if __name__ == "__main__":
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
         time.sleep(0.1)
         print (str_time[9:],flush=True)
-        if (int(str_time[9:16]) in range(52800, 170800)):
+        if (int(str_time[9:16]) in range(52800, 160800)):
             dk_detect()
         else:
             print("out of exchange time.")
