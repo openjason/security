@@ -1,0 +1,8 @@
+.*
+*.iml
+*.[oa]
+*.pyc
+*.log
+.idea
+*.ini
+!.gitignore
