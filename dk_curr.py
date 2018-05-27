@@ -1,6 +1,8 @@
 #-*- coding: utf-8 -*-
 #Author: JasonChan
-VERSION = "Ver: 20180510 "
+#从sianjs上读取时间，替换本机系统时间
+VERSION = "Ver: 20180528 "
+
 
 import smtplib
 from email.mime.text import MIMEText
@@ -37,14 +39,10 @@ folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
 log_prefix = time.strftime('%m%d', time.localtime(time.time()))
 
 cf = configparser.ConfigParser()
-cf_file = 'c:\\dk\\dk_curr.ini'
+cf_file = 'conf.ini'
 if not os.path.isfile(cf_file):
-    cf_file = 'd:\\dk\\dk_curr.ini'
-    if not os.path.isfile(cf_file):
-        cf_file = 'e:\\dk\\dk_curr.ini'
-        if not os.path.isfile(cf_file):
-            logging.critical('无法打开配置文件：dk_curr.ini ')
-            exit(2)
+    logging.critical('无法打开配置文件：conf.ini ')
+    exit(2)
 try:
     cf.read(cf_file, encoding="utf-8-sig")
     target_total = int (cf.get("Common", "total"))
@@ -54,7 +52,7 @@ try:
     SMTP_USER = cf.get("Common", "SMTP_USER")
     SMTP_PWD = cf.get("Common", "SMTP_PWD")
 except:
-    logging.warning('无法打开文件 dk_curr.ini 或设置错误.')
+    logging.warning('无法打开文件 conf.ini 或设置错误.')
     exit(2)
 
 target_name = []
@@ -196,9 +194,10 @@ def get_curr_sinajs(html_doc):
 
         curr_str = lstTemp[3]
         last_str = lstTemp[2]
+        sinajs_time = lstTemp[31]
         gap_float = round(float(curr_str) - float(last_str),3)
         rate = round(gap_float * 100 / float(last_str),2)
-        rtstr = curr_str + '|' + str(gap_float) + '|' + str(rate) +'%'
+        rtstr = curr_str + '|' + str(gap_float) + '|' + str(rate) +'%' + '|' + sinajs_time
         return rtstr
     else:
         logging.info("error in get_curr_sinajs(html_doc)")
@@ -338,6 +337,9 @@ def dk_detect():
         dk_gap = -888888
         try:
             new_price = round(float(new_price_str[0]), 3)
+            updown_pice = new_price_str[1]
+            updown_rate = new_price_str[2]
+            web_time = new_price_str[3]
         except:
             logging.info("gap get error.")
             continue
@@ -400,7 +402,7 @@ def dk_detect():
 
 
         #记录全部交易类型的日志。
-        logging.info(str(i+1)+":"+str(id) +"|"+ new_price_str_raw+"|"+dk_flag+"_"+str(dk_amount)\
+        logging.info(str(id)+"@"+web_time+"$"+ str(new_price)+'|'+str(updown_pice)+"|"+str(updown_rate)+"|"+dk_flag+"_"+str(dk_amount)\
             +"|"+str(dk_value)+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value))
         continue
     return 0
