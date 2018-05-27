@@ -1,8 +1,12 @@
 #-*- coding: utf-8 -*-
 #Author: JasonChan
+<<<<<<< HEAD
 #从sianjs上读取时间，替换本机系统时间
 VERSION = "Ver: 20180528 "
 
+=======
+VERSION = "Ver: 20180526 "
+>>>>>>> 032c8efff1bf65fe923c15333707177be460ee54
 
 import smtplib
 from email.mime.text import MIMEText
@@ -40,9 +44,19 @@ log_prefix = time.strftime('%m%d', time.localtime(time.time()))
 
 cf = configparser.ConfigParser()
 cf_file = 'conf.ini'
+<<<<<<< HEAD
 if not os.path.isfile(cf_file):
     logging.critical('无法打开配置文件：conf.ini ')
     exit(2)
+=======
+# if not os.path.isfile(cf_file):
+#     cf_file = 'd:\\dk\\conf.ini'
+#     if not os.path.isfile(cf_file):
+#         cf_file = 'e:\\dk\\conf.ini'
+#         if not os.path.isfile(cf_file):
+#             logging.critical('无法打开配置文件：conf.ini ')
+#             exit(2)
+>>>>>>> 032c8efff1bf65fe923c15333707177be460ee54
 try:
     cf.read(cf_file, encoding="utf-8-sig")
     target_total = int (cf.get("Common", "total"))
@@ -298,6 +312,14 @@ def get_current(http):
         return (new_price_str)
     return "error in get_current(http)."
 
+def price_right(value,gap):
+    if abs(gap) < (value * 0.11):
+        return True
+    else:
+        print('Out of 10% range.')
+        return False
+
+
 
 #对目标进行轮询,检测当前价格与设定dk价格进行比较,如最新价及上两次价格都满足条件,则进行交易操作.
 #对目标dk值设置采用相反的比较,符合条件(差为正)则执行操作.否则记录更新上两次价格.
@@ -347,55 +369,59 @@ def dk_detect():
         if dk_flag == 'dkbuy':
             #计划买入,之前价格检测２次均符合条件，执行交易
             dk_gap = round(new_price - dk_value,3)
-            if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
-                if exchage_done[i] and is_exchage_time(i):
-                    logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
-                    stock_buy(id,str(dk_amount))
-                    exchage_done[i] = False
-                    send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
-            else:
-                last_secondary_price[i] = last_first_price[i]
-                last_first_price[i] = new_price
+            if price_right(new_price,dk_gap):
+                if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
+                    if exchage_done[i] and is_exchage_time(i):
+                        logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
+                        stock_buy(id,str(dk_amount))
+                        exchage_done[i] = False
+                        send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
+                else:
+                    last_secondary_price[i] = last_first_price[i]
+                    last_first_price[i] = new_price
         #end of dkbuy
 
         elif dk_flag == 'tpbuy': ##到目标价，买
             dk_gap = round(dk_value - new_price, 3)
-            if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
-                if exchage_done[i] and is_exchage_time(i):
-                    logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
-                    stock_buy(id,str(dk_amount))
-                    exchage_done[i] = False
-                    send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
-            else:
-                last_secondary_price[i] = last_first_price[i]
-                last_first_price[i] = new_price
+            if price_right(new_price,dk_gap):
+                if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
+                    if exchage_done[i] and is_exchage_time(i):
+                        logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
+                        stock_buy(id,str(dk_amount))
+                        exchage_done[i] = False
+                        send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
+                else:
+                    last_secondary_price[i] = last_first_price[i]
+                    last_first_price[i] = new_price
         #end of tpbuy
 
         elif dk_flag == 'dksale':
             #计划卖出，之前价格检测２次均符合条件，执行交易
             dk_gap = round(dk_value - new_price, 3)
-            if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
-                if exchage_done[i] and is_exchage_time(i):
-                    logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
-                    stock_sale(id,str(dk_amount))
-                    exchage_done[i] = False
-                    send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
-            else:
-                last_secondary_price[i] = last_first_price[i]
-                last_first_price[i] = new_price
+            if price_right(new_price, dk_gap):
+                if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
+                    if exchage_done[i] and is_exchage_time(i):
+                        logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
+                        stock_sale(id,str(dk_amount))
+                        exchage_done[i] = False
+                        send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
+                else:
+                    last_secondary_price[i] = last_first_price[i]
+                    last_first_price[i] = new_price
         #end of dksale
 
         elif dk_flag == 'tpsale':   #到目标价，卖
             dk_gap = round(new_price - dk_value,3)
-            if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
-                if exchage_done[i] and is_exchage_time(i):
-                    logging.info ("Excute exchage......" + id + dk_flag + ":" +str(dk_amount))
-                    stock_sale(id,str(dk_amount))
-                    exchage_done[i] = False
-                    send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
-            else:
-                last_secondary_price[i] = last_first_price[i]
-                last_first_price[i] = new_price
+            if price_right(new_price, dk_gap):
+                if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
+                    if exchage_done[i] and is_exchage_time(i):
+                        logging.info ("Excute exchage......" + id + dk_flag + ":" +str(dk_amount))
+                        stock_sale(id,str(dk_amount))
+                        exchage_done[i] = False
+                        send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
+                else:
+                    last_secondary_price[i] = last_first_price[i]
+                    last_first_price[i] = new_price
         #end of tpsale
         else:
             logging.info ("无此交易类型...error.")
