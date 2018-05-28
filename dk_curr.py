@@ -1,12 +1,7 @@
 #-*- coding: utf-8 -*-
 #Author: JasonChan
-<<<<<<< HEAD
 #从sianjs上读取时间，替换本机系统时间
 VERSION = "Ver: 20180528 "
-
-=======
-VERSION = "Ver: 20180526 "
->>>>>>> 032c8efff1bf65fe923c15333707177be460ee54
 
 import smtplib
 from email.mime.text import MIMEText
@@ -44,19 +39,9 @@ log_prefix = time.strftime('%m%d', time.localtime(time.time()))
 
 cf = configparser.ConfigParser()
 cf_file = 'conf.ini'
-<<<<<<< HEAD
 if not os.path.isfile(cf_file):
     logging.critical('无法打开配置文件：conf.ini ')
     exit(2)
-=======
-# if not os.path.isfile(cf_file):
-#     cf_file = 'd:\\dk\\conf.ini'
-#     if not os.path.isfile(cf_file):
-#         cf_file = 'e:\\dk\\conf.ini'
-#         if not os.path.isfile(cf_file):
-#             logging.critical('无法打开配置文件：conf.ini ')
-#             exit(2)
->>>>>>> 032c8efff1bf65fe923c15333707177be460ee54
 try:
     cf.read(cf_file, encoding="utf-8-sig")
     target_total = int (cf.get("Common", "total"))
