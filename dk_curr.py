@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 #Author: JasonChan
 #从sianjs上读取时间，替换本机系统时间
-VERSION = "Ver: 20180528 "
+VERSION = "Ver: 20180530 "
 
 import smtplib
 from email.mime.text import MIMEText
@@ -413,7 +413,7 @@ def dk_detect():
 
 
         #记录全部交易类型的日志。
-        logging.info(str(id)+"@"+web_time+"$"+ str(new_price)+'|'+str(updown_pice)+"|"+str(updown_rate)+"|"+dk_flag+"_"+str(dk_amount)\
+        logging.info(str(id)+"@"+web_time+"$"+ str(new_price)+'|'+str(updown_rate)+"|"+str(updown_pice)+"|"+dk_flag+"_"+str(dk_amount)\
             +"|"+str(dk_value)+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value))
         continue
     return 0
