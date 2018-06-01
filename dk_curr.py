@@ -445,7 +445,7 @@ if __name__ == "__main__":
     show_setting()
     while (True):
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
-        time.sleep(0.1)
+        time.sleep(2)
         print (str_time[9:],flush=True)
         if (int(str_time[9:16]) in range(52800, 160800)):
             dk_detect()
