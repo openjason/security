@@ -351,6 +351,18 @@ def in_range_of_price(value,gap):
         logging.info('Out of 10% range.price = %s',value)
         return False
 
+def n_elements_average(my_list, n):
+    n_e_aver = [sum(my_list[k: k + n]) / float(len(my_list[k: k + n]))for k in range(0, len(my_list), n)]
+    return n_e_aver
+
+def slope_of_price(my_list):
+    #
+    average_list = n_elements_average(my_list,4)
+    if average_list[0] != 0 and average_list[1] != 0:
+        slope_o_p = average_list [0]/average_list[1]
+    else:
+        slope_o_p = 0
+    return slope_o_p
 
 class SecurityThread (threading.Thread):
     def __init__(self, threadID, dict_target, q):
@@ -363,6 +375,8 @@ class SecurityThread (threading.Thread):
     def run(self):
         logging.info ("开启线程：" + self.dict_target['name'])
         while(True):
+            logging.info(n_elements_average(self.price_queue,3))
+            logging.info(slope_of_price(self.price_queue))
             if dk_check(self.threadID, self.dict_target,self.security_stat,self.price_queue) == 'dk_fitted':
                 if self.dict_target['onduty'] == 'F':
                     logging.info('dk_fitted: '+ self.dict_target['stock_id'] + ' but onduty is False.')
@@ -395,6 +409,7 @@ class SecurityThread (threading.Thread):
                         send_email(self.dict_target['to_email_addr'],message_email)
                     else:
                         logging.error('error, wrong dk_flag',target_configure['dk_flag'])
+
             time.sleep(3)
         logging.info ("退出线程：" + self.dict_target['name'])
 
