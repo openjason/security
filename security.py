@@ -265,7 +265,7 @@ def get_from_site(httpa,httpb,httpc):
     return current_price_str
 
 def dk_check(threadID, dict_target, security_stat, price_queue):
-
+    string_return = 'not ok'
     i = threadID
     #标号 数字 显示 从 1 开始，与配置文件一致，读取配置文件标号已做处理 。
     httpa = dict_target['httpa']
@@ -299,14 +299,14 @@ def dk_check(threadID, dict_target, security_stat, price_queue):
         dk_gap = round(new_price - dk_value,3)
         if in_range_of_price(new_price,dk_gap):
             if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
-                return 'dk_fitted'
+                string_return = 'dk_fitted'
     #end of dkbuy
 
     elif dk_flag == 'tpbuy': ##到目标价，买
         dk_gap = round(dk_value - new_price, 3)
         if in_range_of_price(new_price,dk_gap):
             if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
-                return 'dk_fitted'
+                string_return= 'dk_fitted'
     #end of tpbuy
 
     elif dk_flag == 'dksale':
@@ -314,7 +314,7 @@ def dk_check(threadID, dict_target, security_stat, price_queue):
         dk_gap = round(dk_value - new_price, 3)
         if in_range_of_price(new_price, dk_gap):
             if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
-                return 'dk_fitted'
+                string_return= 'dk_fitted'
 
     #end of dksale
 
@@ -322,7 +322,7 @@ def dk_check(threadID, dict_target, security_stat, price_queue):
         dk_gap = round(new_price - dk_value,3)
         if in_range_of_price(new_price, dk_gap):
             if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
-                return 'dk_fitted'
+                string_return= 'dk_fitted'
     #end of tpsale
     else:
         logging.info ("无此交易类型...error.")
@@ -332,9 +332,8 @@ def dk_check(threadID, dict_target, security_stat, price_queue):
     #记录全部交易类型的日志。
     logging.info(str(id)+"@"+web_time+"$"+ str(new_price)+'|'+str(updown_rate)+"|"+str(updown_pice)+"|"+dk_flag+"_"+str(dk_amount)\
         +"|"+str(dk_value)+" gap:"+str(dk_gap) + str(price_queue))
-    #logging.info (price_queue)
 
-    return 'not ok'
+    return string_return
 
 
 def in_exchage_time(stock_id_str):
@@ -365,6 +364,10 @@ class SecurityThread (threading.Thread):
         logging.info ("开启线程：" + self.dict_target['name'])
         while(True):
             if dk_check(self.threadID, self.dict_target,self.security_stat,self.price_queue) == 'dk_fitted':
+                if self.dict_target['onduty'] == 'F':
+                    logging.info('dk_fitted: '+ self.dict_target['stock_id'] + ' but onduty is False.')
+                    time.sleep(3)
+                    continue
                 logging.info('dk_fitted: '+ self.dict_target['stock_id'])
                 if (not self.security_stat['exchage_done']) and in_exchage_time(self.dict_target['stock_id']):
                     logging.info('time is ok, ready for do it...')
@@ -394,20 +397,6 @@ class SecurityThread (threading.Thread):
                         logging.error('error, wrong dk_flag',target_configure['dk_flag'])
             time.sleep(3)
         logging.info ("退出线程：" + self.dict_target['name'])
-
-def process_data(threadID, threadName, q):
-    #dk_detect(threadID, threadName)
-
-    while not exitFlag:
-        queueLock.acquire()
-        if not exchange_Queue.empty():
-            data = q.get()
-            queueLock.release()
-            logging.info ("%s processing %s" % (threadName, data))
-        else:
-            queueLock.release()
-        time.sleep(4)
-
 
 if __name__ == '__main__':
     read_configure('conf.ini')
