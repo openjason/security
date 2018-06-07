@@ -29,116 +29,110 @@ import threading
 from anjian import stock_sale
 from anjian import stock_buy
 
-SMTP_SERVER = ""
-WORK_DIR = ""
-SMTP_USER = ""
-SMTP_PWD = ""
-SMTP_SENDER = ""
 
 long_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
 log_prefix = time.strftime('%m%d', time.localtime(time.time()))
 
+common_configure = {} # a dict
+target_configure = [] # a list ,some dict in it.
+
 exitFlag = 0
-
-
-cf = configparser.ConfigParser()
-cf_file = 'conf.ini'
-if not os.path.isfile(cf_file):
-    logging.critical('无法打开配置文件：conf.ini ')
-    exit(2)
-try:
-    cf.read(cf_file, encoding="utf-8-sig")
-    target_total = int (cf.get("Common", "total"))
-    from_email_addr = cf.get("Common", "from_email_addr")
-    SMTP_SERVER = cf.get("Common", "SMTP_SERVER")
-    WORK_DIR = cf.get("Common", "WORK_DIR")
-    SMTP_USER = cf.get("Common", "SMTP_USER")
-    SMTP_PWD = cf.get("Common", "SMTP_PWD")
-except:
-    logging.warning('无法打开文件 conf.ini 或设置错误.')
-    exit(2)
-
-target_name = []
-target_httpa = []
-target_httpb = []
-target_httpc = []
-target_id = []
-target_dk_flag =[]
-target_dk_value = []
-target_dk_amount = []
-target_emailaddr = []
-
-target_volatility = []
-target_timerange = []
-target_onduty = []
-last_first_price = []
-last_secondary_price = []
-exchage_done = []
-
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(message)s',
                     datefmt='%a, %d %b %H:%M:%S',
-                    filename = os.path.join(WORK_DIR,log_prefix+'.log'),
+                    filename = log_prefix+'.log',
                     filemode='a')
 
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 logging.getLogger('').addHandler(console)
 
-for i in range(1,target_total+1):
+
+def read_configure(conf_name= 'conf.ini'):
+    cf = configparser.ConfigParser()
+    cf_file = conf_name
+    if not os.path.isfile(cf_file):
+        logging.critical('无法打开配置文件：conf.ini ')
+        exit(2)
     try:
-        cfstr = 'Target' + str(i)
-        target_name.append(cf.get(cfstr,'name'))
-        target_httpa.append(cf.get(cfstr,'httpa'))
-        target_httpb.append(cf.get(cfstr,'httpb'))
-        target_httpc.append(cf.get(cfstr,'httpc'))
-        target_id.append(cf.get(cfstr, 'stock_id'))
-        target_dk_flag.append(cf.get(cfstr, 'dk_flag'))
-        target_dk_value.append(cf.get(cfstr, 'dk_value'))
-        target_dk_amount.append(cf.get(cfstr, 'dk_amount'))
-        target_emailaddr.append(cf.get(cfstr,'to_email_addr'))
-        target_volatility.append(cf.get(cfstr,'volatility'))
-        target_timerange.append(cf.get(cfstr,'timerange'))
-        target_onduty.append(cf.get(cfstr,'onduty'))
+        cf.read(cf_file, encoding="utf-8-sig")
+        common_configure['total'] = int(cf.get("Common", "total"))
+        common_configure['from_email_addr'] = cf.get("Common", "from_email_addr")
+        common_configure['SMTP_SERVER'] = cf.get("Common", "SMTP_SERVER")
+        common_configure['WORK_DIR'] = cf.get("Common", "WORK_DIR")
+        common_configure['SMTP_USER'] = cf.get("Common", "SMTP_USER")
+        common_configure['SMTP_PWD'] = cf.get("Common", "SMTP_PWD")
+    except Exception as e:
+        logging.warning('无法打开文件 conf.ini 或设置错误.')
+        logging.warning(e)
+        exit(2)
 
-        #新交易类型，需配置初始值
-        if cf.get(cfstr, 'dk_flag') == 'dkbuy' or cf.get(cfstr, 'dk_flag') == 'tpsale':
-            last_first_price.append(-7777)
-            last_secondary_price.append(-7777)
-        else:
-            last_first_price.append(8888)
-            last_secondary_price.append(8888)
+    for i in range(1, common_configure['total'] + 1):
+        target_dict = {}
+        try:
+            cfstr = 'Target' + str(i)
+            target_dict['name'] = cf.get(cfstr, 'name')
+            target_dict['httpa'] = cf.get(cfstr, 'httpa')
+            target_dict['httpb'] = cf.get(cfstr, 'httpb')
+            target_dict['httpc'] = cf.get(cfstr, 'httpc')
+            target_dict['stock_id'] = cf.get(cfstr, 'stock_id')
+            target_dict['dk_flag'] = cf.get(cfstr, 'dk_flag')
+            target_dict['dk_value'] = cf.get(cfstr, 'dk_value')
+            target_dict['dk_amount'] = cf.get(cfstr, 'dk_amount')
+            target_dict['to_email_addr'] = cf.get(cfstr, 'to_email_addr')
+            target_dict['volatility'] = cf.get(cfstr, 'volatility')
+            target_dict['timerange'] = cf.get(cfstr, 'timerange')
+            target_dict['onduty'] = cf.get(cfstr, 'onduty')
+            target_configure.append(target_dict)
 
-        exchage_done.append(True)
+            # 新交易类型，需配置初始值
+            # if cf.get(cfstr, 'dk_flag') == 'dkbuy' or cf.get(cfstr, 'dk_flag') == 'tpsale':
+            #     last_first_price.append(-7777)
+            #     last_secondary_price.append(-7777)
+            # else:
+            #     last_first_price.append(8888)
+            #     last_secondary_price.append(8888)
+            #
+            # exchage_done.append(True)
+        except Exception as e:
+            logging.warning("conf.ini 配置有误，参数:" + cfstr)
+            logging.warning(e)
+            exit(2)
 
-    except:
-        logging.warning("conf.ini 配置有误，参数:"+cfstr)
+def show_setting():
+    print(common_configure)
+    for i in range(common_configure['total']):
+    #标号 数字 显示 从 1 开始，与配置文件一致，读取配置文件标号已做处理 。
+        print("= " * 35)
+        for tdict in target_configure[i]:
+            print ("%15s : %-60s"%(tdict,target_configure[i][tdict]))
+    print("= "*35)
 
 def send_email(toaddr,c_subject):
     logging.info("Subject:"+c_subject)
-    toaddr = SMTP_USER
+#    toaddr = toaddr
     try:
         msg = MIMEMultipart()
         msg['To'] = ";".join(toaddr)
-        msg['From'] = SMTP_SENDER+"<" + SMTP_USER + ">"
+        msg['From'] = "Jason<" + common_configure['SMTP_USER'] + ">"
         msg['Subject'] = c_subject
         html = c_subject
-        html = html.replace("YYYY-MM-DD",long_date)
         body = MIMEText(html, 'plain')
         #    body = MIMEText(text_body, 'plain')
         msg.attach(body)  # add message body (text or html)
 
-        server = smtplib.SMTP(SMTP_SERVER, 25)
-        server.login(SMTP_USER, SMTP_PWD)
+        server = smtplib.SMTP(common_configure['SMTP_SERVER'], 25)
+        server.login(common_configure['SMTP_USER'], common_configure['SMTP_PWD'])
         mailbody = msg.as_string()
 
-        server.sendmail(SMTP_USER, toaddr, mailbody) #send mail to & cc email address
-        logging.info("发送邮件OK："+"to:"+c_subject)
+        server.sendmail(common_configure['SMTP_USER'], toaddr, mailbody) #send mail to & cc email address
+        logging.info("发送邮件OK："+"to:"+toaddr + " Subj:"+c_subject)
         server.quit()
-    except:
-        logging.info("error发送邮件："+"to:"+c_subject)
+    except Exception as e:
+        logging.info("error发送邮件："+"to:"+toaddr + " Subj:"+c_subject)
+        logging.info(e)
 
 
 def getHtml_sinajs(url):
@@ -270,33 +264,21 @@ def get_from_site(httpa,httpb,httpc):
                 return "error in get_from_site(httpa,httpb,httpc)"
     return current_price_str
 
-def dk_detect(threadID, threadName):
-    global exchage_done
-    global target_total
-    global target_dk_value
-    global target_dk_amount
-    global target_dk_flag
-    global target_httpa
-    global target_httpb
-    global target_httpc
-    global target_id
-    global last_first_price
-    global last_secondary_price
+def dk_check(threadID, dict_target, security_stat, price_queue):
 
     i = threadID
     #标号 数字 显示 从 1 开始，与配置文件一致，读取配置文件标号已做处理 。
-    httpa = target_httpa[i]
-    httpb = target_httpb[i]
-    httpc = target_httpc[i]
-    dk_flag = target_dk_flag[i]
-    dk_value = float(target_dk_value[i])
-    dk_amount = int(target_dk_amount[i])
-    id = target_id [i]
+    httpa = dict_target['httpa']
+    httpb = dict_target['httpb']
+    httpc = dict_target['httpc']
+    dk_flag = dict_target['dk_flag']
+    dk_value = float(dict_target['dk_value'])
+    dk_amount = int(dict_target['dk_amount'])
+    id = dict_target['stock_id']
 
-    last_one_value = last_first_price[i]
-    last_two_value = last_secondary_price[i]
-
-#    time.sleep(1.7)
+    last_one_value = price_queue[9]
+    last_two_value = price_queue[8]
+#    print('jt1:',last_one_value,last_two_value)
     new_price_str_raw = get_from_site(httpa,httpb,httpc)
 
     if "|" in new_price_str_raw:
@@ -317,28 +299,14 @@ def dk_detect(threadID, threadName):
         dk_gap = round(new_price - dk_value,3)
         if in_range_of_price(new_price,dk_gap):
             if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
-                if exchage_done[i] and in_exchage_time(i):
-                    logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
-                    stock_buy(id,str(dk_amount))
-                    exchage_done[i] = False
-                    send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
-            else:
-                last_secondary_price[i] = last_first_price[i]
-                last_first_price[i] = new_price
+                return 'dk_fitted'
     #end of dkbuy
 
     elif dk_flag == 'tpbuy': ##到目标价，买
         dk_gap = round(dk_value - new_price, 3)
         if in_range_of_price(new_price,dk_gap):
             if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
-                if exchage_done[i] and in_exchage_time(i):
-                    logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
-                    stock_buy(id,str(dk_amount))
-                    exchage_done[i] = False
-                    send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
-            else:
-                last_secondary_price[i] = last_first_price[i]
-                last_first_price[i] = new_price
+                return 'dk_fitted'
     #end of tpbuy
 
     elif dk_flag == 'dksale':
@@ -346,45 +314,35 @@ def dk_detect(threadID, threadName):
         dk_gap = round(dk_value - new_price, 3)
         if in_range_of_price(new_price, dk_gap):
             if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
-                if exchage_done[i] and in_exchage_time(i):
-                    logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
-                    stock_sale(id,str(dk_amount))
-                    exchage_done[i] = False
-                    send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
-            else:
-                last_secondary_price[i] = last_first_price[i]
-                last_first_price[i] = new_price
+                return 'dk_fitted'
+
     #end of dksale
 
     elif dk_flag == 'tpsale':   #到目标价，卖
         dk_gap = round(new_price - dk_value,3)
         if in_range_of_price(new_price, dk_gap):
             if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
-                if exchage_done[i] and in_exchage_time(i):
-                    logging.info ("Excute exchage......" + id + dk_flag + ":" +str(dk_amount))
-                    stock_sale(id,str(dk_amount))
-                    exchage_done[i] = False
-                    send_email(SMTP_USER,"DK Message:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
-            else:
-                last_secondary_price[i] = last_first_price[i]
-                last_first_price[i] = new_price
+                return 'dk_fitted'
     #end of tpsale
     else:
         logging.info ("无此交易类型...error.")
-
+    price_queue.pop(0)
+    price_queue.append(new_price)
 
     #记录全部交易类型的日志。
     logging.info(str(id)+"@"+web_time+"$"+ str(new_price)+'|'+str(updown_rate)+"|"+str(updown_pice)+"|"+dk_flag+"_"+str(dk_amount)\
-        +"|"+str(dk_value)+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value))
+        +"|"+str(dk_value)+" gap:"+str(dk_gap) + str(price_queue))
+    #logging.info (price_queue)
 
-    return 0
+    return 'not ok'
 
-def in_exchage_time(i):
+
+def in_exchage_time(stock_id_str):
     str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
     if (int(str_time[9:16]) in range(92700, 113800) or int(str_time[9:16]) in range(125700, 150800)):
         return True
     else:
-        logging.info(str_time + " error, out of exchange time.id = %s",target_id[i])
+        logging.info(str_time + " error, out of exchange time.id = %s",stock_id_str)
         return False
 
 def in_range_of_price(value,gap):
@@ -394,20 +352,51 @@ def in_range_of_price(value,gap):
         logging.info('Out of 10% range.price = %s',value)
         return False
 
+
 class SecurityThread (threading.Thread):
-    def __init__(self, threadID, name, q):
+    def __init__(self, threadID, dict_target, q):
         threading.Thread.__init__(self)
         self.threadID = threadID
-        self.name = name
+        self.dict_target = dict_target
+        self.security_stat = {'exchage_done':False}
+        self.price_queue = [0,0,0,0,0,0,0,0,0,0]
         self.q = q
     def run(self):
-        logging.info ("开启线程：" + self.name)
-        process_data(self.threadID, self.name, self.q)
-        logging.info ("退出线程：" + self.name)
+        logging.info ("开启线程：" + self.dict_target['name'])
+        while(True):
+            if dk_check(self.threadID, self.dict_target,self.security_stat,self.price_queue) == 'dk_fitted':
+                logging.info('dk_fitted: '+ self.dict_target['stock_id'])
+                if (not self.security_stat['exchage_done']) and in_exchage_time(self.dict_target['stock_id']):
+                    logging.info('time is ok, ready for do it...')
+                    if 'buy' in self.dict_target['dk_flag']:
+                        logging.info('dk_buy_signal...')
+                        self.security_stat['exchage_done'] = True
+#                        continue
+                        # locker for exchage，only one exchage can be excute at once..
+                        threadLock.acquire()
+                        stock_buy(self.dict_target['stock_id'],self.dict_target['dk_amount'])
+                        threadLock.release()
+
+                        message_email = "DK Message:"+self.dict_target['stock_id'] + str(self.price_queue[9])+self.dict_target['dk_flag']+str(self.dict_target['dk_amount'])
+                        send_email(self.dict_target['to_email_addr'],message_email)
+
+                    elif 'sale' in self.dict_target['dk_flag']:
+                        logging.info('dk_sale_signal...')
+                        self.security_stat['exchage_done'] = True
+#                        continue
+                        # locker for exchage，only one exchage can be excute at once..
+                        threadLock.acquire()
+                        stock_sale(self.dict_target['stock_id'],self.dict_target['dk_amount'])
+                        threadLock.release()
+                        message_email = "DK Message:"+self.dict_target['stock_id'] + str(self.price_queue[9])+self.dict_target['dk_flag']+str(self.dict_target['dk_amount'])
+                        send_email(self.dict_target['to_email_addr'],message_email)
+                    else:
+                        logging.error('error, wrong dk_flag',target_configure['dk_flag'])
+            time.sleep(3)
+        logging.info ("退出线程：" + self.dict_target['name'])
 
 def process_data(threadID, threadName, q):
-
-    dk_detect(threadID, threadName)
+    #dk_detect(threadID, threadName)
 
     while not exitFlag:
         queueLock.acquire()
@@ -420,38 +409,53 @@ def process_data(threadID, threadName, q):
         time.sleep(4)
 
 
-
-
 if __name__ == '__main__':
-    threadList = target_id
-    nameList = target_name
+    read_configure('conf.ini')
+    show_setting()
+
+#    send_email('13825686039@139.com','test for dk')
+#    exit(0)
+    # threadList = target_id
+    # nameList = target_name
     queueLock = threading.Lock()
     exchange_Queue = queue.Queue(10)
     threads = []
     threadID = 0
 
     # 创建新线程
-    for int_list_id in range(len(threadList)):
+    for int_list_id in range(common_configure['total']):
         #print(int_list_id,threadID[int_list_id])
-        thread = SecurityThread(threadID, nameList[int_list_id], exchange_Queue)
+        thread = SecurityThread(threadID, target_configure[int_list_id], exchange_Queue)
+        thread.daemon = True
         thread.start()
+        # try:
+        #     while thread.isAlive():
+        #         pass
+        # except KeyboardInterrupt:
+        #     print('stopped by keyboard')
+        # print('main end')
         threads.append(thread)
         threadID += 1
 
+    threadLock = threading.Lock()
     # 填充队列
-    queueLock.acquire()
-    for word in nameList:
-        exchange_Queue.put(word)
-    queueLock.release()
+#    queueLock.acquire()
+    # for word in nameList:
+    #     exchange_Queue.put(word)
+#    queueLock.release()
 
     # 等待队列清空
-    while not exchange_Queue.empty():
-        pass
+#    while not exchange_Queue.empty():
+#        pass
 
     # 通知线程是时候退出
     exitFlag = 1
 
     # 等待所有线程完成
-    for t in threads:
-        t.join()
-    print("退出主线程")
+    # for t in threads:
+    #     t.join()
+    # logging.info("退出主线程")
+
+    #set thread deamon , then keep main func alive. not use join().
+    while True:
+        time.sleep(1)
