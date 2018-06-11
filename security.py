@@ -157,16 +157,10 @@ def get_curr_sinajs(html_doc):
         strTemp = lstTemp[1]
         lstTemp = strTemp.split(',')
 
-        curr_str = lstTemp[3]
-        last_str = lstTemp[2]
-        sinajs_time = lstTemp[31]
-        gap_float = round(float(curr_str) - float(last_str),3)
-        rate = round(gap_float * 100 / float(last_str),2)
-        rtstr = curr_str + '|' + str(gap_float) + '|' + str(rate) +'%' + '|' + sinajs_time
-        return rtstr
-    else:
-        logging.info("error in get_curr_sinajs(html_doc)")
-        return ("error no data.")
+        if len(lstTemp) == 32:
+            return strTemp
+    logging.info("error in get_curr_sinajs(html_doc).")
+    return ("error in get_curr_sinajs(html_doc).")
 # 这个字符串由许多数据拼接在一起，不同含义的数据用逗号隔开了，按照程序员的思路，顺序号从0开始。
 # 0：”大秦铁路”，股票名字；
 # 1：”27.55″，今日开盘价；
@@ -264,30 +258,70 @@ def get_from_site(httpa,httpb,httpc):
                 return "error in get_from_site(httpa,httpb,httpc)"
     return current_price_str
 
-def dk_check(threadID, dict_target, security_stat, price_queue):
-    string_return = 'not ok'
+def update_price_queue(threadID, dict_target, security_stat, price_queue):
     i = threadID
-    #标号 数字 显示 从 1 开始，与配置文件一致，读取配置文件标号已做处理 。
+    # 标号 数字 显示 从 1 开始，与配置文件一致，读取配置文件标号已做处理 。
     httpa = dict_target['httpa']
-    httpb = dict_target['httpb']
-    httpc = dict_target['httpc']
+    # httpb = dict_target['httpb']
+    # httpc = dict_target['httpc']
+    httpb = ''
+    httpc = ''
+    # only use sinajs data
+
     dk_flag = dict_target['dk_flag']
     dk_value = float(dict_target['dk_value'])
     dk_amount = int(dict_target['dk_amount'])
     id = dict_target['stock_id']
 
-    last_one_value = price_queue[9]
-    last_two_value = price_queue[8]
-#    print('jt1:',last_one_value,last_two_value)
-    new_price_str_raw = get_from_site(httpa,httpb,httpc)
+    new_price_str_raw = get_from_site(httpa, httpb, httpc)
 
-    if "|" in new_price_str_raw:
-        new_price_str = new_price_str_raw.split('|')
-    else:
-        new_price_str = []
+    new_price_str_lst = new_price_str_raw.split(',')
+    try:
+        new_price = new_price_str_lst[3]
+        updown_pice = new_price_str[1]
+        updown_rate = new_price_str[2]
+        web_time = new_price_str[3]
+    except:
+        logging.info("update price queue error.")
+
+    if dk_flag == 'dkbuy':
+        # 计划买入,之前价格检测２次均符合条件，执行交易
+        dk_gap = round(new_price - dk_value, 3)
+
+    elif dk_flag == 'tpbuy':  ##到目标价，买
+        dk_gap = round(dk_value - new_price, 3)
+
+    elif dk_flag == 'dksale':
+        # 计划卖出，之前价格检测２次均符合条件，执行交易
+        dk_gap = round(dk_value - new_price, 3)
+
+    elif dk_flag == 'tpsale':  # 到目标价，卖
+        dk_gap = round(new_price - dk_value, 3)
+    price_queue.pop(0)
+    price_queue.append(new_price)
+
+    # 记录全部交易类型的日志。
+    logging.info(str(id) + "@" + web_time + "$" + str(new_price) + '|' + str(updown_rate) + "|" + str(
+        updown_pice) + "|" + dk_flag + "_" + str(dk_amount) \
+                 + "|" + str(dk_value) + " gap:" + str(dk_gap) + str(price_queue))
+
+
+def dk_check(threadID, dict_target, security_stat, price_queue):
+    string_return = 'not ok'
+    i = threadID
+    #标号 数字 显示 从 1 开始，与配置文件一致，读取配置文件标号已做处理 。
+    dk_flag = dict_target['dk_flag']
+    dk_value = float(dict_target['dk_value'])
+    dk_amount = int(dict_target['dk_amount'])
+    id = dict_target['stock_id']
+
+    last_one_value = price_queue[-2]
+    last_two_value = price_queue[-3]
+#    print('jt1:',last_one_value,last_two_value)
+
     dk_gap = -888888
     try:
-        new_price = round(float(new_price_str[0]), 3)
+        new_price = price_queue[-1]
         updown_pice = new_price_str[1]
         updown_rate = new_price_str[2]
         web_time = new_price_str[3]
@@ -377,6 +411,10 @@ class SecurityThread (threading.Thread):
         while(True):
             logging.info(n_elements_average(self.price_queue,3))
             logging.info(slope_of_price(self.price_queue))
+            update_price_queue(self.threadID, self.dict_target,self.security_stat,self.price_queue)
+            time.sleep(3)
+            continue
+
             if dk_check(self.threadID, self.dict_target,self.security_stat,self.price_queue) == 'dk_fitted':
                 if self.dict_target['onduty'] == 'F':
                     logging.info('dk_fitted: '+ self.dict_target['stock_id'] + ' but onduty is False.')
