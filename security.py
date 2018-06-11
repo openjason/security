@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # Author: Jason Chan
 
-VERSION = "Ver: 2018060905"
+VERSION = "Ver: 2018060907"
 
 import smtplib
 from email.mime.text import MIMEText
@@ -46,7 +46,7 @@ logging.basicConfig(level=logging.DEBUG,
                     filemode='a')
 
 console = logging.StreamHandler()
-console.setLevel(logging.INFO)
+console.setLevel(logging.DEBUG)
 logging.getLogger('').addHandler(console)
 
 
@@ -156,8 +156,9 @@ def get_curr_sinajs(html_doc):
     if len(lstTemp) == 3 :
         strTemp = lstTemp[1]
         lstTemp = strTemp.split(',')
-
-        if len(lstTemp) == 32:
+#        print(strTemp)
+#        print(len(lstTemp))
+        if len(lstTemp) == 33:
             return strTemp
     logging.info("error in get_curr_sinajs(html_doc).")
     return ("error in get_curr_sinajs(html_doc).")
@@ -274,15 +275,19 @@ def update_price_queue(threadID, dict_target, security_stat, price_queue):
     id = dict_target['stock_id']
 
     new_price_str_raw = get_from_site(httpa, httpb, httpc)
-
+    if 'error' in new_price_str_raw:
+        logging.error('error, no data.')
+        return 'error, no data.'
     new_price_str_lst = new_price_str_raw.split(',')
-    try:
-        new_price = new_price_str_lst[3]
-        updown_pice = new_price_str[1]
-        updown_rate = new_price_str[2]
-        web_time = new_price_str[3]
-    except:
-        logging.info("update price queue error.")
+    new_price = float(new_price_str_lst[3])
+    lastday_price = float(new_price_str_lst[2])
+    updown_pice = round(new_price - lastday_price,3)
+    updown_rate = round((updown_pice / lastday_price)*100,2)
+    web_xch_time = new_price_str_lst[31]
+
+    security_stat['updown_price'] = updown_pice
+    security_stat['updown_rate'] = updown_rate
+    security_stat['web_xch_time'] = web_xch_time
 
     if dk_flag == 'dkbuy':
         # 计划买入,之前价格检测２次均符合条件，执行交易
@@ -297,85 +302,85 @@ def update_price_queue(threadID, dict_target, security_stat, price_queue):
 
     elif dk_flag == 'tpsale':  # 到目标价，卖
         dk_gap = round(new_price - dk_value, 3)
-    price_queue.pop(0)
-    price_queue.append(new_price)
+    price_queue.pop()
+    price_queue.insert(0,new_price)
 
     # 记录全部交易类型的日志。
-    logging.info(str(id) + "@" + web_time + "$" + str(new_price) + '|' + str(updown_rate) + "|" + str(
+    logging.info(str(id) + "@" + web_xch_time + "$" + str(new_price) + '|' + str(updown_rate) + "|" + str(
         updown_pice) + "|" + dk_flag + "_" + str(dk_amount) \
                  + "|" + str(dk_value) + " gap:" + str(dk_gap) + str(price_queue))
-
+    return id + ' data from sinajs updated.'
 
 def dk_check(threadID, dict_target, security_stat, price_queue):
-    string_return = 'not ok'
+    id = dict_target['stock_id']
+    if security_stat['bool_dk_fit'] == True:
+        return id + ' last value is true.'
+
     i = threadID
     #标号 数字 显示 从 1 开始，与配置文件一致，读取配置文件标号已做处理 。
     dk_flag = dict_target['dk_flag']
     dk_value = float(dict_target['dk_value'])
     dk_amount = int(dict_target['dk_amount'])
-    id = dict_target['stock_id']
+    dk_onduty = dict_target['onduty']
 
-    last_one_value = price_queue[-2]
-    last_two_value = price_queue[-3]
-#    print('jt1:',last_one_value,last_two_value)
+
+    # if dk_onduty == 'F':
+    #     logging.info(id+' onduty is F.')
+    #     return string_return + ' onduty is F'
 
     dk_gap = -888888
-    try:
-        new_price = price_queue[-1]
-        updown_pice = new_price_str[1]
-        updown_rate = new_price_str[2]
-        web_time = new_price_str[3]
-    except:
-        logging.info("gap get error.")
+    new_price = price_queue[0]
+    last_one_value = price_queue[1]
+    last_two_value = price_queue[2]
+
+    updown_price = security_stat['updown_price']
+    updown_rate = security_stat['updown_rate']
+    web_xch_time = security_stat['web_xch_time']
 
     if dk_flag == 'dkbuy':
         #计划买入,之前价格检测２次均符合条件，执行交易
         dk_gap = round(new_price - dk_value,3)
         if in_range_of_price(new_price,dk_gap):
-            if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
-                string_return = 'dk_fitted'
+            if (dk_gap >0):
+                security_stat['bool_dk_fit'] = True
+                return id + ' dkbuy.set dk value true.'
     #end of dkbuy
 
     elif dk_flag == 'tpbuy': ##到目标价，买
         dk_gap = round(dk_value - new_price, 3)
         if in_range_of_price(new_price,dk_gap):
-            if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
-                string_return= 'dk_fitted'
+            if (dk_gap >0):
+                security_stat['bool_dk_fit']  = True
+                return id + ' tpbuy.set dk value true.'
     #end of tpbuy
 
     elif dk_flag == 'dksale':
         #计划卖出，之前价格检测２次均符合条件，执行交易
         dk_gap = round(dk_value - new_price, 3)
         if in_range_of_price(new_price, dk_gap):
-            if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
-                string_return= 'dk_fitted'
-
+            if (dk_gap >0):
+                security_stat['bool_dk_fit']  = True
+                return id + ' dksale.set dk value true.'
     #end of dksale
 
     elif dk_flag == 'tpsale':   #到目标价，卖
         dk_gap = round(new_price - dk_value,3)
         if in_range_of_price(new_price, dk_gap):
-            if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
-                string_return= 'dk_fitted'
+            if (dk_gap >0):
+                security_stat['bool_dk_fit']  = True
+                return id + ' tpsale.set dk value true.'
     #end of tpsale
     else:
         logging.info ("无此交易类型...error.")
-    price_queue.pop(0)
-    price_queue.append(new_price)
-
-    #记录全部交易类型的日志。
-    logging.info(str(id)+"@"+web_time+"$"+ str(new_price)+'|'+str(updown_rate)+"|"+str(updown_pice)+"|"+dk_flag+"_"+str(dk_amount)\
-        +"|"+str(dk_value)+" gap:"+str(dk_gap) + str(price_queue))
-
-    return string_return
-
+        return id + " error 无此交易类型...error."
+    return id + ' dk is not fit.'
 
 def in_exchage_time(stock_id_str):
     str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
     if (int(str_time[9:16]) in range(92700, 113800) or int(str_time[9:16]) in range(125700, 150800)):
         return True
     else:
-        logging.info(str_time + " error, out of exchange time.id = %s",stock_id_str)
+        logging.info("%s error, out of exchange time.",stock_id_str)
         return False
 
 def in_range_of_price(value,gap):
@@ -389,7 +394,7 @@ def n_elements_average(my_list, n):
     n_e_aver = [sum(my_list[k: k + n]) / float(len(my_list[k: k + n]))for k in range(0, len(my_list), n)]
     return n_e_aver
 
-def slope_of_price(my_list):
+def slope_of_price_average(my_list):
     #
     average_list = n_elements_average(my_list,4)
     if average_list[0] != 0 and average_list[1] != 0:
@@ -399,52 +404,51 @@ def slope_of_price(my_list):
     return slope_o_p
 
 class SecurityThread (threading.Thread):
-    def __init__(self, threadID, dict_target, q):
+    def __init__(self, threadID, dict_target):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.dict_target = dict_target
-        self.security_stat = {'exchage_done':False}
-        self.price_queue = [0,0,0,0,0,0,0,0,0,0]
-        self.q = q
+        self.security_stat = {'exchage_done':False, 'bool_dk_fit':False}
+        self.price_queue = [0]*10
+        self.beat_times = 0
     def run(self):
         logging.info ("开启线程：" + self.dict_target['name'])
+        id = self.dict_target['stock_id']
         while(True):
-            logging.info(n_elements_average(self.price_queue,3))
-            logging.info(slope_of_price(self.price_queue))
-            update_price_queue(self.threadID, self.dict_target,self.security_stat,self.price_queue)
-            time.sleep(3)
-            continue
+            self.beat_times += 1
+            logging.info(update_price_queue(self.threadID, self.dict_target,self.security_stat,self.price_queue))
+            logging.info(dk_check(self.threadID, self.dict_target,self.security_stat,self.price_queue))
 
-            if dk_check(self.threadID, self.dict_target,self.security_stat,self.price_queue) == 'dk_fitted':
+            logging.info('%s %s',id, n_elements_average(self.price_queue[:6],3))
+            logging.info('%s slope_average:%s',id, slope_of_price_average(self.price_queue))
+
+            if self.security_stat['bool_dk_fit']:
                 if self.dict_target['onduty'] == 'F':
-                    logging.info('dk_fitted: '+ self.dict_target['stock_id'] + ' but onduty is False.')
+                    logging.info(self.dict_target['stock_id'] +' dk_fitted, onduty is False.')
                     time.sleep(3)
                     continue
-                logging.info('dk_fitted: '+ self.dict_target['stock_id'])
+                logging.info(self.dict_target['stock_id'] + ' dk_fitted, exchage_done:' + str(self.security_stat['exchage_done']) )
                 if (not self.security_stat['exchage_done']) and in_exchage_time(self.dict_target['stock_id']):
                     logging.info('time is ok, ready for do it...')
                     if 'buy' in self.dict_target['dk_flag']:
-                        logging.info('dk_buy_signal...')
-                        self.security_stat['exchage_done'] = True
-#                        continue
+                        logging.info('dk_buy_signal...excute it.')
+
                         # locker for exchage，only one exchage can be excute at once..
                         threadLock.acquire()
                         stock_buy(self.dict_target['stock_id'],self.dict_target['dk_amount'])
                         threadLock.release()
-
-                        message_email = "DK Message:"+self.dict_target['stock_id'] + str(self.price_queue[9])+self.dict_target['dk_flag']+str(self.dict_target['dk_amount'])
-                        send_email(self.dict_target['to_email_addr'],message_email)
-
-                    elif 'sale' in self.dict_target['dk_flag']:
-                        logging.info('dk_sale_signal...')
                         self.security_stat['exchage_done'] = True
-#                        continue
+                        message_email = "DK Message:"+self.dict_target['stock_id'] + str(self.price_queue[0])+self.dict_target['dk_flag']+str(self.dict_target['dk_amount'])
+                        send_email(self.dict_target['to_email_addr'], message_email)
+                    elif 'sale' in self.dict_target['dk_flag']:
+                        logging.info('dk_sale_signal...excute it.')
                         # locker for exchage，only one exchage can be excute at once..
                         threadLock.acquire()
                         stock_sale(self.dict_target['stock_id'],self.dict_target['dk_amount'])
                         threadLock.release()
+                        self.security_stat['exchage_done'] = True
                         message_email = "DK Message:"+self.dict_target['stock_id'] + str(self.price_queue[9])+self.dict_target['dk_flag']+str(self.dict_target['dk_amount'])
-                        send_email(self.dict_target['to_email_addr'],message_email)
+                        send_email(self.dict_target['to_email_addr'], message_email)
                     else:
                         logging.error('error, wrong dk_flag',target_configure['dk_flag'])
 
@@ -455,8 +459,6 @@ if __name__ == '__main__':
     read_configure('conf.ini')
     show_setting()
 
-#    send_email('13825686039@139.com','test for dk')
-#    exit(0)
     # threadList = target_id
     # nameList = target_name
     queueLock = threading.Lock()
@@ -467,7 +469,7 @@ if __name__ == '__main__':
     # 创建新线程
     for int_list_id in range(common_configure['total']):
         #print(int_list_id,threadID[int_list_id])
-        thread = SecurityThread(threadID, target_configure[int_list_id], exchange_Queue)
+        thread = SecurityThread(threadID, target_configure[int_list_id])
         thread.daemon = True
         thread.start()
         # try:
