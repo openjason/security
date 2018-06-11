@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # Author: Jason Chan
 
-VERSION = "Ver: 201806070524 "
+VERSION = "Ver: 2018060905"
 
 import smtplib
 from email.mime.text import MIMEText
