@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # Author: Jason Chan
 
-VERSION = "Ver: 2018060907"
+VERSION = "Ver: 2018061220"
 
 import smtplib
 from email.mime.text import MIMEText
@@ -409,7 +409,7 @@ class SecurityThread (threading.Thread):
         self.threadID = threadID
         self.dict_target = dict_target
         self.security_stat = {'exchage_done':False, 'bool_dk_fit':False}
-        self.price_queue = [0]*10
+        self.price_queue = [0]*12
         self.beat_times = 0
     def run(self):
         logging.info ("开启线程：" + self.dict_target['name'])
