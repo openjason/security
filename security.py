@@ -156,8 +156,8 @@ def get_curr_sinajs(html_doc):
     if len(lstTemp) == 3 :
         strTemp = lstTemp[1]
         lstTemp = strTemp.split(',')
-
-        if len(lstTemp) == 32:
+        lenghtofstr=len(lstTemp)
+        if lenghtofstr == 33:
             return strTemp
     logging.info("error in get_curr_sinajs(html_doc).")
     return ("error in get_curr_sinajs(html_doc).")
@@ -275,15 +275,17 @@ def update_price_queue(threadID, dict_target, security_stat, price_queue):
 
     new_price_str_raw = get_from_site(httpa, httpb, httpc)
 
+    print(new_price_str_raw)
     new_price_str_lst = new_price_str_raw.split(',')
+    print(new_price_str_lst)
     try:
-        new_price = new_price_str_lst[3]
-        updown_pice = new_price_str[1]
+        new_price = float(new_price_str_lst[3])
+        updown_pice = float(new_price_str[1])
         updown_rate = new_price_str[2]
         web_time = new_price_str[3]
     except:
         logging.info("update price queue error.")
-
+        return ("error. update price queue error.")
     if dk_flag == 'dkbuy':
         # 计划买入,之前价格检测２次均符合条件，执行交易
         dk_gap = round(new_price - dk_value, 3)
