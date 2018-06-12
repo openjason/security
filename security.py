@@ -380,23 +380,23 @@ def in_exchage_time(stock_id_str):
     if (int(str_time[9:16]) in range(92700, 113800) or int(str_time[9:16]) in range(125700, 150800)):
         return True
     else:
-        logging.info("%s error, out of exchange time.",stock_id_str)
+#        logging.info("%s error, out of exchange time.",stock_id_str)
         return False
 
 def in_range_of_price(value,gap):
     if abs(gap) < (value * 0.11):
         return True
     else:
-        logging.info('Out of 10% range.price = %s',value)
+        logging.info('Out of 10% range.price = '+ str(value))
         return False
 
 def n_elements_average(my_list, n):
     n_e_aver = [sum(my_list[k: k + n]) / float(len(my_list[k: k + n]))for k in range(0, len(my_list), n)]
     return n_e_aver
 
-def slope_of_price_average(my_list):
+def slope_of_price_average(my_list,n):
     #
-    average_list = n_elements_average(my_list,4)
+    average_list = n_elements_average(my_list,n)
     if average_list[0] != 0 and average_list[1] != 0:
         slope_o_p = average_list [0]/average_list[1]
     else:
@@ -416,11 +416,18 @@ class SecurityThread (threading.Thread):
         id = self.dict_target['stock_id']
         while(True):
             self.beat_times += 1
+            if  not in_exchage_time(self.dict_target['stock_id']):
+                time.sleep(5)
+                print('not in exchange %d'%(self.beat_times))
+                continue
             logging.info(update_price_queue(self.threadID, self.dict_target,self.security_stat,self.price_queue))
             logging.info(dk_check(self.threadID, self.dict_target,self.security_stat,self.price_queue))
 
-            logging.info('%s %s',id, n_elements_average(self.price_queue[:6],3))
-            logging.info('%s slope_average:%s',id, slope_of_price_average(self.price_queue))
+            logging.info('%s %s',id, n_elements_average(self.price_queue[:8],4))
+            logging.info('%s 4p slope_average:%s',id, slope_of_price_average(self.price_queue[:8],4))
+            logging.info('%s %s',id, n_elements_average(self.price_queue[:6],2))
+            logging.info('%s 2p slope_average:%s',id, slope_of_price_average(self.price_queue[:4],2))
+
 
             if self.security_stat['bool_dk_fit']:
                 if self.dict_target['onduty'] == 'F':
