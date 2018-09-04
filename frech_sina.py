@@ -1,6 +1,6 @@
 import urllib.request
 import re
-import datetime
+import time
 
 
 def getHtml(url):
@@ -10,6 +10,7 @@ def getHtml(url):
             break
         except:
             print("超时重试")
+            time.sleep(3)
     html = html.decode('gbk')
     return html
 
@@ -53,8 +54,10 @@ def his_daily_from_sina(ticker_symbol, tran_date, temp_save_filename):
     # 股票代码
     symbol = 'sz300750'
     # 日期
-    dateObj = datetime.datetime(2018, 8, 31)
-    tran_date = dateObj.strftime("%Y-%m-%d")
+#    dateObj = datetime.datetime(2018, 8, 31)
+    #tran_date = dateObj.strftime("%Y-%m-%d")
+
+    fp = open(temp_save_filename,'w')
 
     # 页码，因为不止1页，从第一页开始爬取
     page = 1
@@ -71,12 +74,16 @@ def his_daily_from_sina(ticker_symbol, tran_date, temp_save_filename):
             if page == 1:
                 thead = getTitle(table[0])
                 print(thead)
+                fp.writelines(thead+'\n')
             for tr in tbody:
                 print(tr)
+                fp.writelines(tr+'\n')
+            time.sleep(3)
         else:
             print("当日无数据")
             break
         page += 1
+    fp.close()
 
 if __name__ == '__main__':
     his_daily_from_sina('sz300750', '2018-08-31', 'sz300750_0831.txt')
