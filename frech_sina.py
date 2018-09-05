@@ -1,10 +1,16 @@
 import urllib.request
 import re
 import time
-
+import ssl
+import http.cookiejar
 
 def getHtml(url):
     while True:
+        context = ssl._create_unverified_context()
+        cj = http.cookiejar.CookieJar()
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+        opener.addheaders = [('User-Agent','Mozilla/5.0')]
+        urllib.request.install_opener(opener)
         try:
             html = urllib.request.urlopen(url, timeout=5).read()
             break
@@ -74,11 +80,11 @@ def his_daily_from_sina(ticker_symbol, tran_date, temp_save_filename):
             if page == 1:
                 thead = getTitle(table[0])
                 print(thead)
-                fp.writelines(thead+'\n')
+                fp.writelines(str(thead)+'\n')
             for tr in tbody:
                 print(tr)
-                fp.writelines(tr+'\n')
-            time.sleep(3)
+                fp.writelines(str(tr)+'\n')
+            time.sleep(2)
         else:
             print("当日无数据")
             break
@@ -86,4 +92,4 @@ def his_daily_from_sina(ticker_symbol, tran_date, temp_save_filename):
     fp.close()
 
 if __name__ == '__main__':
-    his_daily_from_sina('sz300750', '2018-08-31', 'sz300750_0831.txt')
+    his_daily_from_sina('sz300750', '2018-08-30', 'sz300750_0830.txt')
