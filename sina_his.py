@@ -5,9 +5,11 @@ import ssl
 import http.cookiejar
 
 
-class get_from_sina_daily():
+class Getdailydata:
+    def __init__(self):
+        pass
 
-    def getHtml(url):
+    def getHtml(self,url):
         while True:
             context = ssl._create_unverified_context()
             cj = http.cookiejar.CookieJar()
@@ -15,7 +17,7 @@ class get_from_sina_daily():
             opener.addheaders = [('User-Agent','Mozilla/5.0')]
             urllib.request.install_opener(opener)
             try:
-                html = urllib.request.urlopen(url, timeout=5).read()
+                html = urllib.request.urlopen(url, timeout=3).read()
                 break
             except:
                 print("超时重试")
@@ -24,14 +26,14 @@ class get_from_sina_daily():
         return html
 
 
-    def getTable(html):
+    def getTable(self,html):
         s = r'(?<=<table class="datatbl" id="datatbl">)([\s\S]*?)(?=</table>)'
         pat = re.compile(s)
         code = pat.findall(html)
         return code
 
 
-    def getTitle(tableString):
+    def getTitle(self, tableString):
         s = r'(?<=<thead)>.*?([\s\S]*?)(?=</thead>)'
         pat = re.compile(s)
         code = pat.findall(tableString)
@@ -44,7 +46,7 @@ class get_from_sina_daily():
         return code3
 
 
-    def getBody(tableString):
+    def getBody(self, tableString):
         s = r'(?<=<tbody)>.*?([\s\S]*?)(?=</tbody>)'
         pat = re.compile(s)
         code = pat.findall(tableString)
@@ -59,7 +61,7 @@ class get_from_sina_daily():
         return code3
 
 
-    def his_daily_from_sina(ticker_symbol, tran_date, temp_save_filename):
+    def his_daily_from_sina(self, ticker_symbol, tran_date, temp_save_filename):
         # 股票代码
         symbol = 'sz300750'
         # 日期
@@ -73,21 +75,21 @@ class get_from_sina_daily():
 
         while True:
             Url = 'http://market.finance.sina.com.cn/transHis.php?symbol=' + symbol + '&date=' + tran_date + '&page=' + str(page)
-            html = getHtml(Url)
-            table = getTable(html)
+            html = self.getHtml(Url)
+            table = self.getTable(html)
             if len(table) != 0:
-                tbody = getBody(table[0])
+                tbody = self.getBody(table[0])
                 if len(tbody) == 0:
                     print("结束")
                     break
                 if page == 1:
-                    thead = getTitle(table[0])
+                    thead = self.getTitle(table[0])
                     print(thead)
                     fp.writelines(str(thead)+'\n')
                 for tr in tbody:
                     print(tr)
                     fp.writelines(str(tr)+'\n')
-                time.sleep(2)
+                time.sleep(0.5)
             else:
                 print("当日无数据")
                 break
@@ -95,4 +97,5 @@ class get_from_sina_daily():
         fp.close()
 
 if __name__ == '__main__':
-    his_daily_from_sina('sz300750', '2018-08-30', 'sz300750_0830.txt')
+    test = Getdailydata()
+    test.his_daily_from_sina('sz300750', '2018-09-04', 'sz300750_0904.log')
