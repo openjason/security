@@ -21,7 +21,7 @@ class Getdailydata:
                 break
             except:
                 print("超时重试")
-                time.sleep(3)
+                time.sleep(7)
         html = html.decode('gbk')
         return html
 
@@ -88,8 +88,14 @@ class Getdailydata:
                     fp.writelines(str(thead)+'\n')
                 for tr in tbody:
                     print(tr)
-                    fp.writelines(str(tr)+'\n')
-                time.sleep(0.5)
+                    itemcount = 0
+                    for item in tr:
+                        if itemcount > 0:
+                            fp.write(',')
+                        fp.write(item)
+                        itemcount = itemcount + 1;
+                    fp.write('\n')
+                time.sleep(4)
             else:
                 print("当日无数据")
                 break
@@ -98,4 +104,4 @@ class Getdailydata:
 
 if __name__ == '__main__':
     test = Getdailydata()
-    test.his_daily_from_sina('sz300750', '2018-09-04', 'sz300750_0904.log')
+    test.his_daily_from_sina('sz300750', '2018-11-21', 'sz300750_1121.log')

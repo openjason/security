@@ -5,7 +5,7 @@ CREATE DATABASE IF NOT EXISTS `sec` /*!40100 DEFAULT CHARACTER SET latin1 */;
 USE `sec`;
 
 -- 导出  表 sec.d2407 结构
-CREATE TABLE IF NOT EXISTS `d2407` (
+CREATE TABLE IF NOT EXISTS `sz300750` (
   `xdate` datetime DEFAULT NULL,
   `price` float DEFAULT NULL,
   `pdiff` float DEFAULT NULL,
