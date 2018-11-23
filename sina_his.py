@@ -68,7 +68,7 @@ class Getdailydata:
     #    dateObj = datetime.datetime(2018, 8, 31)
         #tran_date = dateObj.strftime("%Y-%m-%d")
 
-        fp = open(temp_save_filename,'w')
+        fp = open(temp_save_filename,'w',encoding='UTF-8')
 
         # 页码，因为不止1页，从第一页开始爬取
         page = 1
@@ -85,7 +85,7 @@ class Getdailydata:
                 if page == 1:
                     thead = self.getTitle(table[0])
                     print(thead)
-                    fp.writelines(str(thead)+'\n')
+                    #fp.writelines(str(thead)+'\n')
                 for tr in tbody:
                     print(tr)
                     itemcount = 0
@@ -104,4 +104,4 @@ class Getdailydata:
 
 if __name__ == '__main__':
     test = Getdailydata()
-    test.his_daily_from_sina('sz300750', '2018-11-21', 'sz300750_1121.log')
+    test.his_daily_from_sina('sz300750', '2018-11-22', 'sz300750_1122.log')
