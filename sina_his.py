@@ -89,7 +89,7 @@ class Getdailydata:
                 for tr in tbody:
                     print(tr)
                     itemcount = 0
-                    fp.write(tran_date)
+                    fp.write(tran_date+" ")
                     for item in tr:
                         if itemcount > 0:
                             fp.write(',')
