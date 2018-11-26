@@ -15,22 +15,49 @@ CREATE TABLE IF NOT EXISTS `sz300750` (
 #flush privileges;
 #LOAD DATA LOW_PRIORITY LOCAL INFILE 'F:\\dev\\GitHub\\security\\usz300750_1121.log' REPLACE INTO TABLE `stock`.`sz300750` FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"' ESCAPED BY '"' LINES TERMINATED BY '\r\n' IGNORE 1 LINES (`xdate`, `price`, `pdiff`, `volume`, `amount`, `bors`);
 
-import csv
-import MySQLdb
-DB_HOST = '1.1.1.198'
-mydb = MySQLdb.connect(host='DB_HOST',
-    user='jcc',
-    passwd='jccisme',
-    db='stock')
-cursor = mydb.cursor()
+import pymysql.cursors
 
-csv_data = csv.reader(file('students.csv'))
-for row in csv_data:
 
-    cursor.execute('INSERT INTO testcsv(names, \
-          classes, mark )' \
-          'VALUES("%s", "%s", "%s")',
-          row)
-#close the connection to the database.
-cursor.close()
-print ("Done")
+
+# Connect to the database
+'''
+connection = pymysql.connect(host='1.1.1.178',
+                             user='jcc',
+                             password='jccisme',
+                             db='stock',
+                             charset='utf8mb4',
+                             cursorclass=pymysql.cursors.DictCursor)
+'''
+datalist = []
+with open('sz300750_1122.log', 'r',encoding='UTF-8') as file_to_read:
+    lines = file_to_read.readline()
+    while True:
+        lines = file_to_read.readline()  # 整行读取数据
+        if not lines:
+            break
+            pass
+        datalist.append(lines)
+        pass
+    pass
+print(datalist)
+quit()
+
+
+try:
+    with connection.cursor() as cursor:
+        # Create a new record
+        sql = "INSERT INTO `users` (`email`, `password`) VALUES (%s, %s)"
+        cursor.execute(sql, ('webmaster@python.org', 'very-secret'))
+
+    # connection is not autocommit by default. So you must commit to save
+    # your changes.
+    connection.commit()
+
+    with connection.cursor() as cursor:
+        # Read a single record
+        sql = "SELECT `id`, `password` FROM `users` WHERE `email`=%s"
+        cursor.execute(sql, ('webmaster@python.org',))
+        result = cursor.fetchone()
+        print(result)
+finally:
+    connection.close()
