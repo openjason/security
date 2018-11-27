@@ -92,7 +92,7 @@ class Getdailydata:
                     fp.write(tran_date+" ")
                     for item in tr:
                         if itemcount > 0:
-                            fp.write(',')
+                            fp.write(';')
                         fp.write(item)
                         itemcount = itemcount + 1;
                     fp.write('\n')
@@ -104,5 +104,5 @@ class Getdailydata:
         fp.close()
 
 if __name__ == '__main__':
-    test = Getdailydata()
-    test.his_daily_from_sina('sz300750', '2018-11-22', 'sz300750_1122.log')
+    dairy_data = Getdailydata()
+    dairy_data.his_daily_from_sina('sz300750', '2018-11-22', 'sz300750_1122.log')
