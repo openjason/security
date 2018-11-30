@@ -1,4 +1,7 @@
 '''
+#docker run -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=pwd mariadb
+# docker exec -it cid /bin/bash
+
 #CREATE DATABASE stock character set utf8 collate utf8_bin;
 CREATE TABLE IF NOT EXISTS `sz300750` (
   `xdate` datetime DEFAULT NULL,
@@ -10,7 +13,8 @@ CREATE TABLE IF NOT EXISTS `sz300750` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 
 #CREATE USER 'jcc'@'%' IDENTIFIED BY 'pwd123456';
-#grant all privileges on stock.* to 'jcc'@'%';
+#grant all privileges on stock.* to 'jcc'@'%' identified by 'pwd123456' with grant option;
+#grant all privileges on stock.* to 'jcc'@'%'; #不明确 with grant option 有什么作用, 没有这参数,有时授权无效.
 #flush privileges;
 # #alter user 'jcc'@'%' identified with mysql_native_password by 'pwd123456'; #修改加密规则 
 
@@ -29,7 +33,7 @@ import pymysql.cursors
 def writetodb():
     BSM_dict = {'卖盘':'S','买盘':'B','中性盘':'N'}
     print('Connecting to the database...')
-    connection = pymysql.connect(host='1.1.1.178',
+    connection = pymysql.connect(host='192.168.18.229',
                                  user='jcc',
                                  password='jccisme',
                                  db='stock',
