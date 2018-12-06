@@ -25,22 +25,33 @@ CREATE TABLE IF NOT EXISTS `sz300750` (
 # 重置密码：alter user'root'@'localhost' identified by 'root';
 
 #LOAD DATA LOW_PRIORITY LOCAL INFILE 'F:\\dev\\GitHub\\security\\usz300750_1121.log' REPLACE INTO TABLE `stock`.`sz300750` FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"' ESCAPED BY '"' LINES TERMINATED BY '\r\n' IGNORE 1 LINES (`xdate`, `price`, `pdiff`, `volume`, `amount`, `bors`);
+
+清理异常数据：
+1、price偏离股价平均价20%
+2、成交差价大于平均价2%
+3、时间重复
+
 '''
 
 import pymysql.cursors
 #import string
 
+DBhost='192.168.18.101'
+DBuser='jcc'
+DBpassword='pwd123456'
+DBname='stock'
+
 def writetodb():
     BSM_dict = {'卖盘':'S','买盘':'B','中性盘':'N'}
-    print('Connecting to the database...')
-    connection = pymysql.connect(host='192.168.18.229',
-                                 user='jcc',
-                                 password='jccisme',
-                                 db='stock',
+    print('Connecting to the database...'+DBuser+'@'+DBhost)
+    connection = pymysql.connect(host=DBhost,
+                                 user=DBuser,
+                                 password=DBpassword,
+                                 db=DBname,
                                  charset='utf8mb4',
                                  cursorclass=pymysql.cursors.DictCursor)
     datalist = []
-    with open('sz300750_1122.log', 'r',encoding='UTF-8') as file_to_read:
+    with open('sz300750_11-22.log', 'r',encoding='UTF-8') as file_to_read:
         print('Reading daily record...')
         while True:
             lines = file_to_read.readline()  # 整行读取数据
@@ -50,6 +61,9 @@ def writetodb():
             datalist.append(lines)
             pass
         pass
+
+    datalist.sort()
+
 
     for rec_index in range(len(datalist)):
         one_line = datalist[rec_index]
