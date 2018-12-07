@@ -20,7 +20,7 @@ class Getdailydata:
                 html = urllib.request.urlopen(url, timeout=3).read()
                 break
             except:
-                print("超时重试")
+                print("超时....重试.")
                 time.sleep(7)
         html = html.decode('gbk')
         return html
@@ -106,5 +106,5 @@ class Getdailydata:
 if __name__ == '__main__':
     dairy_data = Getdailydata()
     curr_stock = 'sz300750'
-    curr_date = '2018-11-22'
+    curr_date = '2018-12-05'
     dairy_data.his_daily_from_sina(curr_stock, curr_date, curr_stock+'_'+curr_date[5:]+'.log')

@@ -3,14 +3,18 @@
 # docker exec -it cid /bin/bash
 
 #CREATE DATABASE stock character set utf8 collate utf8_bin;
-CREATE TABLE IF NOT EXISTS `sz300750` (
-  `xdate` datetime DEFAULT NULL,
-  `price` float DEFAULT NULL,
-  `pdiff` float DEFAULT NULL,
-  `volume` float DEFAULT NULL,
-  `amount` float DEFAULT NULL,
-  `bors` char(8) CHARACTER SET latin1 DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+CREATE TABLE `sz300750` (
+	`xdate` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`price` FLOAT NULL DEFAULT NULL,
+	`pdiff` FLOAT NULL DEFAULT NULL,
+	`volume` FLOAT NULL DEFAULT NULL,
+	`amount` FLOAT NULL DEFAULT NULL,
+	`bors` CHAR(8) NULL DEFAULT NULL COLLATE 'utf8mb4_unicode_520_ci',
+	PRIMARY KEY (`xdate`)
+)
+COLLATE='utf8mb4_unicode_520_ci'
+ENGINE=InnoDB
+;
 
 #CREATE USER 'jcc'@'%' IDENTIFIED BY 'pwd123456';
 #grant all privileges on stock.* to 'jcc'@'%' identified by 'pwd123456' with grant option;
@@ -31,12 +35,14 @@ CREATE TABLE IF NOT EXISTS `sz300750` (
 2、成交差价大于平均价2%
 3、时间重复
 
+                                 charset='utf8mb4',
+
 '''
 
 import pymysql.cursors
 #import string
 
-DBhost='192.168.18.101'
+DBhost='1.1.1.177'
 DBuser='jcc'
 DBpassword='pwd123456'
 DBname='stock'
@@ -48,7 +54,6 @@ def writetodb():
                                  user=DBuser,
                                  password=DBpassword,
                                  db=DBname,
-                                 charset='utf8mb4',
                                  cursorclass=pymysql.cursors.DictCursor)
     datalist = []
     with open('sz300750_11-22.log', 'r',encoding='UTF-8') as file_to_read:
@@ -63,10 +68,31 @@ def writetodb():
         pass
 
     datalist.sort()
-
+    price_sum = 0.0
+    for rec_index in range(len(datalist)):
+        onelinedata = datalist[rec_index].split(';')
+        price_sum = price_sum + float(onelinedata[1])
+    price_average = price_sum/len(datalist)
+    for rec_index in range(1,len(datalist)):
+        onelinedata = datalist[rec_index].split(';')
+        if datalist[rec_index][:20] == datalist[rec_index-1][:20]:
+            print('Info...Remove dup data: '+datalist[rec_index])
+            datalist[rec_index] = 'removed'
+            continue
+        if (float(onelinedata[1]) < 0) or (float(onelinedata[1]) > (price_average * 1.2)):
+            print('Info...Remove price error data: '+datalist[rec_index])
+            datalist[rec_index] = 'removed'
+            continue
+        if onelinedata[2].isdigit():
+            if abs(float(onelinedata[2])) > 0.2:
+                print('Info...Remove pdiff error data: '+datalist[rec_index])
+                datalist[rec_index] = 'removed'
+                continue
 
     for rec_index in range(len(datalist)):
         one_line = datalist[rec_index]
+        if one_line == 'removed':
+            continue
         one_rec = one_line.split(';')
         rec_changed = False
         if one_rec[2] == '--':
@@ -76,12 +102,13 @@ def writetodb():
         try:
             with connection.cursor() as cursor:
                 # Create a new record
+                bsm_value = BSM_dict[one_rec[5].strip()]
                 sql = "INSERT INTO `sz300750` (`xdate`, `price`, `pdiff`, `volume`, `amount`, `bors`) VALUES (%s, %s, %s, %s, %s, %s)"
-                cursor.execute(sql, (one_rec[0], one_rec[1], one_rec[2], one_rec[3], one_rec[4].replace(',', ''), BSM_dict[one_rec[5].strip()]))
+                cursor.execute(sql, (one_rec[0], one_rec[1], one_rec[2], one_rec[3], one_rec[4].replace(',', ''), bsm_value))
 
             # connection is not autocommit by default. So you must commit to save
             # your changes.
-            print(one_rec[0])
+            print(one_rec)
 
             # with connection.cursor() as cursor:
             #     # Read a single record
@@ -90,7 +117,7 @@ def writetodb():
             #     result = cursor.fetchone()
             #     print(result)
         except:
-            print('Error in record ' + one_rec[0])
+            print('Error in record ' + one_rec)
             connection.close()
     connection.commit()
     connection.close()
