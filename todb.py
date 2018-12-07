@@ -47,7 +47,7 @@ DBuser='jcc'
 DBpassword='pwd123456'
 DBname='stock'
 
-def writetodb():
+def writetodb(data_filename):
     BSM_dict = {'卖盘':'S','买盘':'B','中性盘':'N'}
     print('Connecting to the database...'+DBuser+'@'+DBhost)
     connection = pymysql.connect(host=DBhost,
@@ -56,7 +56,7 @@ def writetodb():
                                  db=DBname,
                                  cursorclass=pymysql.cursors.DictCursor)
     datalist = []
-    with open('sz300750_11-22.log', 'r',encoding='UTF-8') as file_to_read:
+    with open(data_filename, 'r',encoding='UTF-8') as file_to_read:
         print('Reading daily record...')
         while True:
             lines = file_to_read.readline()  # 整行读取数据
@@ -69,25 +69,36 @@ def writetodb():
 
     datalist.sort()
     price_sum = 0.0
-    for rec_index in range(len(datalist)):
+    for rec_index in range(len(datalist)):#合计记录中买入价，求平均值
         onelinedata = datalist[rec_index].split(';')
         price_sum = price_sum + float(onelinedata[1])
     price_average = price_sum/len(datalist)
-    for rec_index in range(1,len(datalist)):
+
+    previous_data = ''
+    for rec_index in range(len(datalist)):
         onelinedata = datalist[rec_index].split(';')
-        if datalist[rec_index][:20] == datalist[rec_index-1][:20]:
+        if datalist[rec_index][:20] == previous_data[:20]:
             print('Info...Remove dup data: '+datalist[rec_index])
             datalist[rec_index] = 'removed'
+            previous_data = datalist[rec_index]
             continue
+        previous_data = datalist[rec_index]
+
         if (float(onelinedata[1]) < 0) or (float(onelinedata[1]) > (price_average * 1.2)):
             print('Info...Remove price error data: '+datalist[rec_index])
             datalist[rec_index] = 'removed'
             continue
-        if onelinedata[2].isdigit():
-            if abs(float(onelinedata[2])) > 0.2:
-                print('Info...Remove pdiff error data: '+datalist[rec_index])
-                datalist[rec_index] = 'removed'
+        temp_str = onelinedata[2]
+        try:
+            if abs(float(onelinedata[2])) > 1.0:# 缺口大于1.0,1.0只作参考
+                print('Info...pdiff->0: '+datalist[rec_index])
+                datalist_temp = onelinedata[0] + ';'+ onelinedata[1] + ';0;' + onelinedata[3]  + ';'+ onelinedata[4]  + ';'+ onelinedata[5]
+                datalist[rec_index] = datalist_temp
                 continue
+        except:
+            if onelinedata[2] != '--':
+                print('Info... pdiff float error: ' + datalist[rec_index])
+            continue
 
     for rec_index in range(len(datalist)):
         one_line = datalist[rec_index]
@@ -116,10 +127,12 @@ def writetodb():
             #     cursor.execute(sql, ('webmaster@python.org',))
             #     result = cursor.fetchone()
             #     print(result)
-        except:
-            print('Error in record ' + one_rec)
+        except Exception as e:
+            print('Error in record,  exit(2)' + str(one_rec))
+            print(e)
             connection.close()
+            exit(2)
     connection.commit()
     connection.close()
 if __name__ == '__main__':
-    writetodb()
+    writetodb('sz300750_11-29.log')
