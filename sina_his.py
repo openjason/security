@@ -63,7 +63,7 @@ class Getdailydata:
 
     def his_daily_from_sina(self, ticker_symbol, tran_date, temp_save_filename):
         # 股票代码
-        symbol = 'sz300750'
+        symbol = ticker_symbol
         # 日期
     #    dateObj = datetime.datetime(2018, 8, 31)
         #tran_date = dateObj.strftime("%Y-%m-%d")
@@ -81,12 +81,13 @@ class Getdailydata:
                 tbody = self.getBody(table[0])
                 if len(tbody) == 0:
                     print("结束")
-                    break
+                    return 0
                 if page == 1:
                     thead = self.getTitle(table[0])
                     print(thead)
                     #fp.writelines(str(thead)+'\n')
                 for tr in tbody:
+                    print(tran_date,symbol,end='')
                     print(tr)
                     itemcount = 0
                     fp.write(tran_date+" ")
@@ -98,13 +99,15 @@ class Getdailydata:
                     fp.write('\n')
                 time.sleep(4)
             else:
+                print(tran_date, symbol, end='')
                 print("当日无数据")
-                break
+                return 10
             page += 1
         fp.close()
 
 if __name__ == '__main__':
     dairy_data = Getdailydata()
     curr_stock = 'sz300750'
-    curr_date = '2018-11-29'
-    dairy_data.his_daily_from_sina(curr_stock, curr_date, curr_stock+'_'+curr_date[5:]+'.log')
+    curr_date = '2018-11-05'
+    curr_filename = curr_stock+'_'+curr_date[5:]+'.log'
+    dairy_data.his_daily_from_sina(curr_stock, curr_date, curr_filename)

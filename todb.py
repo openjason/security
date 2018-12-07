@@ -43,6 +43,7 @@ import pymysql.cursors
 #import string
 
 DBhost='1.1.1.177'
+DBhost='192.168.18.101'
 DBuser='jcc'
 DBpassword='pwd123456'
 DBname='stock'
@@ -90,7 +91,7 @@ def writetodb(data_filename):
             continue
         temp_str = onelinedata[2]
         try:
-            if abs(float(onelinedata[2])) > 1.0:# 缺口大于1.0,1.0只作参考
+            if abs(float(onelinedata[2])) > 3.0:# 缺口大于3.0,3.0只作参考
                 print('Info...pdiff->0: '+datalist[rec_index])
                 datalist_temp = onelinedata[0] + ';'+ onelinedata[1] + ';0;' + onelinedata[3]  + ';'+ onelinedata[4]  + ';'+ onelinedata[5]
                 datalist[rec_index] = datalist_temp
@@ -135,4 +136,9 @@ def writetodb(data_filename):
     connection.commit()
     connection.close()
 if __name__ == '__main__':
-    writetodb('sz300750_11-29.log')
+
+    curr_stock = 'sz300750'
+    curr_date = '2018-11-21'
+    curr_filename = curr_stock+'_'+curr_date[5:]+'.log'
+
+    writetodb(curr_filename)
