@@ -14,8 +14,8 @@ if __name__ == '__main__':
 
     curr_stock = 'sz300750'
 
-    date_begin = datetime.datetime(2018,11,15)
-    for i in range(11):
+    date_begin = datetime.datetime(2018,11,2)
+    for i in range(5):
         curr_date = str(date_begin.strftime('%Y-%m-%d'))
         date_begin = date_begin - datetime.timedelta(days=1)
         #curr_date = '2018-11-24'
