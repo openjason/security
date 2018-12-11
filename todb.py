@@ -138,7 +138,7 @@ def writetodb(data_filename):
 if __name__ == '__main__':
 
     curr_stock = 'sz300750'
-    curr_date = '2018-11-21'
+    curr_date = '2018-07-18'
     curr_filename = curr_stock+'_'+curr_date[5:]+'.log'
 
     writetodb(curr_filename)

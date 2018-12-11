@@ -75,6 +75,7 @@ class Getdailydata:
 
         while True:
             Url = 'http://market.finance.sina.com.cn/transHis.php?symbol=' + symbol + '&date=' + tran_date + '&page=' + str(page)
+            print(Url)
             html = self.getHtml(Url)
             table = self.getTable(html)
             if len(table) != 0:
@@ -108,6 +109,6 @@ class Getdailydata:
 if __name__ == '__main__':
     dairy_data = Getdailydata()
     curr_stock = 'sz300750'
-    curr_date = '2018-11-05'
+    curr_date = '2018-07-18'
     curr_filename = curr_stock+'_'+curr_date[5:]+'.log'
     dairy_data.his_daily_from_sina(curr_stock, curr_date, curr_filename)

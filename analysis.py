@@ -12,97 +12,49 @@ DBuser='jcc'
 DBpassword='pwd123456'
 DBname='stock'
 
-def writetodb(data_filename):
-    BSM_dict = {'卖盘':'S','买盘':'B','中性盘':'N'}
-    print('Connecting to the database...'+DBuser+'@'+DBhost)
+def xch_one_day(stock,curr_date):
+
     connection = pymysql.connect(host=DBhost,
                                  user=DBuser,
                                  password=DBpassword,
                                  db=DBname,
                                  cursorclass=pymysql.cursors.DictCursor)
     datalist = []
-    with open(data_filename, 'r',encoding='UTF-8') as file_to_read:
-        print('Reading daily record...')
-        while True:
-            lines = file_to_read.readline()  # 整行读取数据
-            if not lines:
-                break
-                pass
-            datalist.append(lines)
-            pass
-        pass
+    try:
+        with connection.cursor() as cursor:
+            # Create a new record
+            sql = "select * from "+stock+" where xdate > '" + curr_date + " 00:00' and xdate < '" +curr_date + " 23:00'"
+            print (sql)
+            cursor.execute(sql)
 
-    datalist.sort()
-    price_sum = 0.0
-    for rec_index in range(len(datalist)):#合计记录中买入价，求平均值
-        onelinedata = datalist[rec_index].split(';')
-        price_sum = price_sum + float(onelinedata[1])
-    price_average = price_sum/len(datalist)
+            results = cursor.fetchall()
+            datalist = []
+            for row in results:
+                one_rec = []
+                one_rec.append(row['xdate'])
+                one_rec.append(row['price'])
+                one_rec.append(row['pdiff'])
+                one_rec.append(row['volume'])
+                one_rec.append(row['amount'])
+                one_rec.append(row['bors'])
+                datalist.append(one_rec)
+                print(one_rec)
+                # 打印结果
+    except Exception as e:
+        print('Error in record,  exit(2)')
+        print(e)
+        connection.close()
+        exit(2)
 
-    previous_data = ''
-    for rec_index in range(len(datalist)):
-        onelinedata = datalist[rec_index].split(';')
-        if datalist[rec_index][:20] == previous_data[:20]:
-            print('Info...Remove dup data: '+datalist[rec_index])
-            datalist[rec_index] = 'removed'
-            previous_data = datalist[rec_index]
-            continue
-        previous_data = datalist[rec_index]
-
-        if (float(onelinedata[1]) < 0) or (float(onelinedata[1]) > (price_average * 1.2)):
-            print('Info...Remove price error data: '+datalist[rec_index])
-            datalist[rec_index] = 'removed'
-            continue
-        temp_str = onelinedata[2]
-        try:
-            if abs(float(onelinedata[2])) > 3.0:# 缺口大于3.0,3.0只作参考
-                print('Info...pdiff->0: '+datalist[rec_index])
-                datalist_temp = onelinedata[0] + ';'+ onelinedata[1] + ';0;' + onelinedata[3]  + ';'+ onelinedata[4]  + ';'+ onelinedata[5]
-                datalist[rec_index] = datalist_temp
-                continue
-        except:
-            if onelinedata[2] != '--':
-                print('Info... pdiff float error: ' + datalist[rec_index])
-            continue
-
-    for rec_index in range(len(datalist)):
-        one_line = datalist[rec_index]
-        if one_line == 'removed':
-            continue
-        one_rec = one_line.split(';')
-        rec_changed = False
-        if one_rec[2] == '--':
-            one_rec[2] = 0
-            rec_changed = True
-
-        try:
-            with connection.cursor() as cursor:
-                # Create a new record
-                bsm_value = BSM_dict[one_rec[5].strip()]
-                sql = "INSERT INTO `sz300750` (`xdate`, `price`, `pdiff`, `volume`, `amount`, `bors`) VALUES (%s, %s, %s, %s, %s, %s)"
-                cursor.execute(sql, (one_rec[0], one_rec[1], one_rec[2], one_rec[3], one_rec[4].replace(',', ''), bsm_value))
-
-            # connection is not autocommit by default. So you must commit to save
-            # your changes.
-            print(one_rec)
-
-            # with connection.cursor() as cursor:
-            #     # Read a single record
-            #     sql = "SELECT `id`, `password` FROM `users` WHERE `email`=%s"
-            #     cursor.execute(sql, ('webmaster@python.org',))
-            #     result = cursor.fetchone()
-            #     print(result)
-        except Exception as e:
-            print('Error in record,  exit(2)' + str(one_rec))
-            print(e)
-            connection.close()
-            exit(2)
     connection.commit()
     connection.close()
+    return (datalist)
+
+
 if __name__ == '__main__':
 
     curr_stock = 'sz300750'
     xdate = '2018-11-21'
-    curr_filename = curr_stock+'_'+curr_date[5:]+'.log'
-
-    writetodb(curr_filename)
+    print('Connecting to the database...' + DBuser + '@' + DBhost)
+    daylist = xch_one_day(curr_stock, xdate)
+    print(daylist)

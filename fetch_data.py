@@ -14,8 +14,8 @@ if __name__ == '__main__':
 
     curr_stock = 'sz300750'
 
-    date_begin = datetime.datetime(2018,9,7)
-    for i in range(33):
+    date_begin = datetime.datetime(2018,7,18)
+    for i in range(24):
         # Monday is 0 and Sunday is 6.
         if date_begin.isoweekday() < 6:
             curr_date = str(date_begin.strftime('%Y-%m-%d'))
