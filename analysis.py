@@ -66,7 +66,7 @@ def timestamp(timestep):
     endingtime = datetime.datetime(2000,1,1,15,1)
     timestampdict = {}
     while time_step_point < endingtime:
-        tmp_str = time_step_point.strftime('%m%s')
+        tmp_str = time_step_point.strftime('%M%S')
         timestampdict[tmp_str] = 0
         time_step_point = time_step_point + datetime.timedelta(minutes=timestep)
     return (timestampdict)
