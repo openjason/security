@@ -36,9 +36,8 @@ def xch_one_day(stock,curr_date):
     datalist = []
     try:
         with connection.cursor() as cursor:
-            # Create a new record
             sql = "select * from "+stock+" where xdate > '" + curr_date + " 09:00' and xdate < '" +curr_date + " 16:00' order by xdate"
-            # logging.info (sql)
+            #logging.info (sql)
             cursor.execute(sql)
 
             results = cursor.fetchall()
@@ -196,22 +195,21 @@ def fix_time_xch_result(stock,xdatestr,periodicity,xch_time1,xch_time2,timestep)
             date_begin = date_begin + datetime.timedelta(days=1)
             continue
         curr_xdatestr = str(date_begin.strftime('%Y-%m-%d'))
+        date_begin = date_begin + datetime.timedelta(days=1)#计算当前交易日后自加 1
 
         daylist = xch_one_day(curr_stock, curr_xdatestr)
-        daylist.sort()
+#        print(len(daylist))
+        if len(daylist) > 0:
+            daylist.sort()
+            segm_price1, segm_count1, segm_volum1, segm_amount1 = get_segmentation(daylist,curr_xdatestr,xch_time1,timestep)
+            segm_price2, segm_count2, segm_volum2, segm_amount2 = get_segmentation(daylist,curr_xdatestr,xch_time2,timestep)
+            print (rec_num,':',curr_stock,curr_xdatestr,segm_price1,segm_price2,' split:',segm_price1-segm_price2,)
+            if segm_price1 > 0:
+                if segm_price1 > segm_price2:
+                    bigger12 = bigger12 +1
+                else:
+                    bigger21 = bigger21 +1
 
-        segm_price1, segm_count1, segm_volum1, segm_amount1 = get_segmentation(daylist,curr_xdatestr,xch_time1,timestep)
-
-        segm_price2, segm_count2, segm_volum2, segm_amount2 = get_segmentation(daylist,curr_xdatestr,xch_time2,timestep)
-
-        print (curr_stock,curr_xdatestr,segm_price1,segm_price2,' split:',segm_price1-segm_price2,)
-        if segm_price1 > 0:
-            if segm_price1 > segm_price2:
-                bigger12 = bigger12 +1
-            else:
-                bigger21 = bigger21 +1
-
-        date_begin = date_begin + datetime.timedelta(days=1)
     print('bigger12: ',bigger12,'bigger21: ',bigger21)
 
 if __name__ == '__main__':
