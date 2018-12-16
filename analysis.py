@@ -22,12 +22,6 @@ logging.basicConfig(level=logging.DEBUG,
                     filename = log_prefix+'.log',
                     filemode='a')
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(message)s',
-                    datefmt='%a, %d %b %H:%M:%S',
-                    filename = log_prefix+'.log',
-                    filemode='a')
-
 console = logging.StreamHandler()
 console.setLevel(logging.DEBUG)
 logging.getLogger('').addHandler(console)
@@ -44,7 +38,7 @@ def xch_one_day(stock,curr_date):
         with connection.cursor() as cursor:
             # Create a new record
             sql = "select * from "+stock+" where xdate > '" + curr_date + " 09:00' and xdate < '" +curr_date + " 16:00' order by xdate"
-            logging.info (sql)
+            # logging.info (sql)
             cursor.execute(sql)
 
             results = cursor.fetchall()
@@ -181,7 +175,7 @@ def get_segmentation(daylist,xdate,xtime,timestep):
         segm_count = 1
     return (segm_price/segm_count,segm_count,segm_volum,segm_amount)
 
-def fix_time_xch_result(stock,xdatestr,periodicity,xch_time,timestep):
+def fix_time_xch_result(stock,xdatestr,periodicity,xch_time1,xch_time2,timestep):
     #功能： stock号码在xdatestr日开始periodicity日，在xch_time时间（timestep分钟内）交易金额
     #stock  股票代码
     #xdate  交易开始日期
@@ -189,6 +183,8 @@ def fix_time_xch_result(stock,xdatestr,periodicity,xch_time,timestep):
     #buytime 购买时间，HH:MM
     #saletime 卖出时间，HH:MM
     #timelast 买入卖出时间延续，以分钟为单位
+    bigger12 = 0
+    bigger21 = 0
     curr_stock = 'sz300750'
     xdate_year = int(xdatestr[:4])
     xdate_month = int(xdatestr[5:7])
@@ -196,32 +192,39 @@ def fix_time_xch_result(stock,xdatestr,periodicity,xch_time,timestep):
     date_begin = datetime.datetime(xdate_year,xdate_month,xdate_day)
     for rec_num in range(periodicity):
         if date_begin.isoweekday() > 5:
-            print('Weekend, no xchange at: ' + str(date_begin.strftime('%Y-%m-%d')))
+            #print('Weekend, no xchange at: ' + str(date_begin.strftime('%Y-%m-%d')))
             date_begin = date_begin + datetime.timedelta(days=1)
             continue
         curr_xdatestr = str(date_begin.strftime('%Y-%m-%d'))
 
         daylist = xch_one_day(curr_stock, curr_xdatestr)
+        daylist.sort()
 
-        segm_price, segm_count, segm_volum, segm_amount = get_segmentation(daylist,curr_xdatestr,xch_time,timestep)
+        segm_price1, segm_count1, segm_volum1, segm_amount1 = get_segmentation(daylist,curr_xdatestr,xch_time1,timestep)
 
-        print (curr_stock,curr_xdatestr,segm_price,segm_count)
+        segm_price2, segm_count2, segm_volum2, segm_amount2 = get_segmentation(daylist,curr_xdatestr,xch_time2,timestep)
+
+        print (curr_stock,curr_xdatestr,segm_price1,segm_price2,' split:',segm_price1-segm_price2,)
+        if segm_price1 > 0:
+            if segm_price1 > segm_price2:
+                bigger12 = bigger12 +1
+            else:
+                bigger21 = bigger21 +1
 
         date_begin = date_begin + datetime.timedelta(days=1)
-
+    print('bigger12: ',bigger12,'bigger21: ',bigger21)
 
 if __name__ == '__main__':
 
+    print('Connecting to the database...' + conf.DBuser + '@' + conf.DBhost)
     curr_stock = 'sz300750'
-    xdatestr = '2018-11-13'
+    xdatestr = '2018-07-19'
     timestep = 5
-    fix_time_xch_result(curr_stock,xdatestr,5,'10:00',timestep)
+    fix_time_xch_result(curr_stock,xdatestr,160,'09:55','13:30',timestep)
 
     exit(0)
-    print('Connecting to the database...' + conf.DBuser + '@' + conf.DBhost)
     daylist = xch_one_day(curr_stock, xdatestr)
     daylist.sort()
-
 
     timestampdict = timestamp(timestep)
 
