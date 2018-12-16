@@ -38,23 +38,18 @@ ENGINE=InnoDB
                                  charset='utf8mb4',
 
 '''
-
+import conf
 import pymysql.cursors
 #import string
 
-DBhost='1.1.1.177'
-#DBhost='192.168.18.101'
-DBuser='jcc'
-DBpassword='pwd123456'
-DBname='stock'
 
 def writetodb(data_filename):
     BSM_dict = {'卖盘':'S','买盘':'B','中性盘':'N'}
-    print('Connecting to the database...'+DBuser+'@'+DBhost)
-    connection = pymysql.connect(host=DBhost,
-                                 user=DBuser,
-                                 password=DBpassword,
-                                 db=DBname,
+    print('Connecting to the database...'+conf.DBuser+'@'+conf.DBhost)
+    connection = pymysql.connect(host=conf.DBhost,
+                                 user=conf.DBuser,
+                                 password=conf.DBpassword,
+                                 db=conf.DBname,
                                  cursorclass=pymysql.cursors.DictCursor)
     datalist = []
     with open(data_filename, 'r',encoding='UTF-8') as file_to_read:
@@ -138,7 +133,7 @@ def writetodb(data_filename):
 if __name__ == '__main__':
 
     curr_stock = 'sz300750'
-    curr_date = '2018-07-18'
+    curr_date = '2018-12-14'
     curr_filename = curr_stock+'_'+curr_date[5:]+'.log'
 
     writetodb(curr_filename)

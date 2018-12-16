@@ -4,6 +4,7 @@ import time
 import ssl
 import http.cookiejar
 
+import conf
 
 class Getdailydata:
     def __init__(self):

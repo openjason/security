@@ -4,29 +4,47 @@
 '''
 
 import pymysql.cursors
-import datetime
+import datetime,time
 import matplotlib.pyplot as plt
+import conf
 
 
-DBhost='1.1.1.177'
-#DBhost='192.168.18.101'
-DBuser='jcc'
-DBpassword='pwd123456'
-DBname='stock'
+
+import logging
+
+long_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
+log_prefix = time.strftime('%m%d', time.localtime(time.time()))
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(message)s',
+                    datefmt='%a, %d %b %H:%M:%S',
+                    filename = log_prefix+'.log',
+                    filemode='a')
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(message)s',
+                    datefmt='%a, %d %b %H:%M:%S',
+                    filename = log_prefix+'.log',
+                    filemode='a')
+
+console = logging.StreamHandler()
+console.setLevel(logging.DEBUG)
+logging.getLogger('').addHandler(console)
 
 def xch_one_day(stock,curr_date):
 
-    connection = pymysql.connect(host=DBhost,
-                                 user=DBuser,
-                                 password=DBpassword,
-                                 db=DBname,
+    connection = pymysql.connect(host=conf.DBhost,
+                                 user=conf.DBuser,
+                                 password=conf.DBpassword,
+                                 db=conf.DBname,
                                  cursorclass=pymysql.cursors.DictCursor)
     datalist = []
     try:
         with connection.cursor() as cursor:
             # Create a new record
             sql = "select * from "+stock+" where xdate > '" + curr_date + " 09:00' and xdate < '" +curr_date + " 16:00' order by xdate"
-            print (sql)
+            logging.info (sql)
             cursor.execute(sql)
 
             results = cursor.fetchall()
@@ -66,7 +84,7 @@ def timestamp(timestep):
     endingtime = datetime.datetime(2000,1,1,15,1)
     timestampdict = {}
     while time_step_point < endingtime:
-        tmp_str = time_step_point.strftime('%M%S')
+        tmp_str = time_step_point.strftime('%H%M')
         timestampdict[tmp_str] = 0
         time_step_point = time_step_point + datetime.timedelta(minutes=timestep)
     return (timestampdict)
@@ -130,14 +148,80 @@ def show_plt(showlist, position):
     plt.show()
 
 
+def get_segmentation(daylist,xdate,xtime,timestep):
+    #功能：在daylist列表上计算在xdate（须与daylist对应）xtime（timestep分钟内）交易金额
+    #返回-金额-交易记录数-交易数量-交易总额 return (segm_price, segm_count, segm_volum, segm_amount)
+    #timestep 单位 分钟
+    xdate_y = int(xdate[:4])
+    xdate_m = int(xdate[5:7])
+    xdate_d = int(xdate[8:10])
+    xtime_h = int(xtime[:2])
+    xtime_m = int(xtime[-2:])
+    #年月日 字符串 转 数字
+    segmentation_list = []
+    segm_templist = []
+    time_step_point = datetime.datetime(xdate_y,xdate_m,xdate_d,xtime_h,xtime_m)
+    segm_amount = 0
+    segm_volum =0
+    segm_price = 0
+    segm_count = 0
+    for indx_rec in range(len(daylist)):
+        curr_rec = daylist[indx_rec]
+        if curr_rec[0] > time_step_point:
+#            print('================================')
+#            print(curr_rec)
+            segm_count = segm_count + 1
+            segm_price = segm_price + curr_rec[1]
+            segm_volum = segm_volum + curr_rec[3]
+            segm_amount = segm_amount + curr_rec[4]
+            if curr_rec[0] > time_step_point + datetime.timedelta(minutes=timestep):
+                break
+
+    if segm_price == 0:
+        segm_count = 1
+    return (segm_price/segm_count,segm_count,segm_volum,segm_amount)
+
+def fix_time_xch_result(stock,xdatestr,periodicity,xch_time,timestep):
+    #功能： stock号码在xdatestr日开始periodicity日，在xch_time时间（timestep分钟内）交易金额
+    #stock  股票代码
+    #xdate  交易开始日期
+    #periodicity 时间周期，以日为单位，如7日
+    #buytime 购买时间，HH:MM
+    #saletime 卖出时间，HH:MM
+    #timelast 买入卖出时间延续，以分钟为单位
+    curr_stock = 'sz300750'
+    xdate_year = int(xdatestr[:4])
+    xdate_month = int(xdatestr[5:7])
+    xdate_day = int(xdatestr[8:10])
+    date_begin = datetime.datetime(xdate_year,xdate_month,xdate_day)
+    for rec_num in range(periodicity):
+        if date_begin.isoweekday() > 5:
+            print('Weekend, no xchange at: ' + str(date_begin.strftime('%Y-%m-%d')))
+            date_begin = date_begin + datetime.timedelta(days=1)
+            continue
+        curr_xdatestr = str(date_begin.strftime('%Y-%m-%d'))
+
+        daylist = xch_one_day(curr_stock, curr_xdatestr)
+
+        segm_price, segm_count, segm_volum, segm_amount = get_segmentation(daylist,curr_xdatestr,xch_time,timestep)
+
+        print (curr_stock,curr_xdatestr,segm_price,segm_count)
+
+        date_begin = date_begin + datetime.timedelta(days=1)
+
+
 if __name__ == '__main__':
 
     curr_stock = 'sz300750'
-    xdate = '2018-12-11'
-    print('Connecting to the database...' + DBuser + '@' + DBhost)
-    daylist = xch_one_day(curr_stock, xdate)
-    daylist.sort()
+    xdatestr = '2018-11-13'
     timestep = 5
+    fix_time_xch_result(curr_stock,xdatestr,5,'10:00',timestep)
+
+    exit(0)
+    print('Connecting to the database...' + conf.DBuser + '@' + conf.DBhost)
+    daylist = xch_one_day(curr_stock, xdatestr)
+    daylist.sort()
+
 
     timestampdict = timestamp(timestep)
 

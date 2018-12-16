@@ -14,8 +14,8 @@ if __name__ == '__main__':
 
     curr_stock = 'sz300750'
 
-    date_begin = datetime.datetime(2018,12,11)
-    for i in range(1):
+    date_begin = datetime.datetime(2018,12,13)
+    for i in range(15):
         # Monday is 0 and Sunday is 6.
         if date_begin.isoweekday() < 6:
             curr_date = str(date_begin.strftime('%Y-%m-%d'))
@@ -24,4 +24,4 @@ if __name__ == '__main__':
         else:
             print(curr_date + ' is weekend..')
 
-        date_begin = date_begin - datetime.timedelta(days=1)
+        date_begin = date_begin + datetime.timedelta(days=1)
