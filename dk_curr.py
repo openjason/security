@@ -24,8 +24,8 @@ from bs4 import BeautifulSoup
 import urllib.request
 import urllib.parse
 import http.cookiejar
-from anjian import stock_sale
-from anjian import stock_buy
+#from anjian import stock_sale
+#from anjian import stock_buy
 
 SMTP_SERVER = ""
 WORK_DIR = ""
