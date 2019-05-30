@@ -109,7 +109,7 @@ class Getdailydata:
 
 if __name__ == '__main__':
     dairy_data = Getdailydata()
-    curr_stock = 'sz300750'
-    curr_date = '2018-07-18'
+    curr_stock = 'sz300059'
+    curr_date = '2019-05-18'
     curr_filename = curr_stock+'_'+curr_date[5:]+'.log'
     dairy_data.his_daily_from_sina(curr_stock, curr_date, curr_filename)
