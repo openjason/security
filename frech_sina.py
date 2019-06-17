@@ -92,4 +92,4 @@ def his_daily_from_sina(ticker_symbol, tran_date, temp_save_filename):
     fp.close()
 
 if __name__ == '__main__':
-    his_daily_from_sina('sz300059', '2019-05-29', 'sz300059_0529.txt')
+    his_daily_from_sina('sz300059', '2019-06-10', 'sz300059_0610.txt')

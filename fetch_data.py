@@ -70,10 +70,10 @@ def run_gethis_todb(curr_stock,curr_date,curr_filename):
 
 if __name__ == '__main__':
 
-    curr_stock = 'sz300750'
+    curr_stock = 'sz300059'
 
-    date_begin = datetime.datetime(2018,12,15)
-    for i in range(12):
+    date_begin = datetime.datetime(2019,6,10)
+    for i in range(3):
         # Monday is 0 and Sunday is 6.
         curr_date = str(date_begin.strftime('%Y-%m-%d'))
         if date_begin.isoweekday() < 6:
