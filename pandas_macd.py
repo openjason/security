@@ -37,23 +37,23 @@ def get_kdj_data(data,N=0,M=0):
 	data['KDJ_K'] = pd.ewma(rsv,com=M)
 	data['KDJ_D']=pd.ewma(data['KDJ_K'],com=M)
 	data['KDJ_J'] = 3 * data['KDJ_K'] - 2 * data['KDJ_D']
-	data.fillna(0,inplace=True) 
-	return data[['KDJ_K','KDJ_D','KDJ_J']] 
+	data.fillna(0,inplace=True)
+	return data[['KDJ_K','KDJ_D','KDJ_J']]
 
-def get_ma_data(data,N=0): 
-if N==0: 
-N=5 
-data['ma']=pd.rolling_mean(data['closeL'],N) 
-data.fillna(0,inplace=True) 
-return data[['ma']] 
+def get_ma_data(data,N=0):
+    if N==0:
+      N=5
+      data['ma']=pd.rolling_mean(data['closeL'],N)
+      data.fillna(0,inplace=True)
+      return data[['ma']]
 
-def get_rsi_data(data,N=0): 
-if N==0: 
-N=24 
-data['value']=data['closeL']-data['closeL'].shift(1) 
-data.fillna(0,inplace=True) 
-data['value1']=data['value'] 
-data['value1'][data['value1']<0]=0 
-data['value2']=data['value'] 
-data['value2'][data['value2']>0]=0 
-data['plus']=pd.rolling_sum(data['value1'],N) 
+def get_rsi_data(data,N=0):
+  if N==0:
+    N=24
+    data['value']=data['closeL']-data['closeL'].shift(1)
+    data.fillna(0,inplace=True)
+    data['value1']=data['value']
+    data['value1'][data['value1']<0]=0
+    data['value2']=data['value']
+    data['value2'][data['value2']>0]=0
+    data['plus']=pd.rolling_sum(data['value1'],N)
