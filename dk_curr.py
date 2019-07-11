@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 #Author: JasonChan
 #从sianjs上读取时间，替换本机系统时间
-VERSION = "Ver: 20180530 "
+VERSION = "Ver: 20180710 "
 
 import smtplib
 from email.mime.text import MIMEText
