@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # Author: Jason Chan
 
-VERSION = "Ver: 2018061220"
+VERSION = "Ver: 20190604"
 
 import smtplib
 from email.mime.text import MIMEText
@@ -20,6 +20,7 @@ import socket
 from ctypes import *
 import ssl
 
+import pandas as pd
 from bs4 import BeautifulSoup
 import urllib.request
 import urllib.parse
@@ -28,6 +29,7 @@ import queue
 import threading
 from anjian import stock_sale
 from anjian import stock_buy
+from macd import calc_MACD
 
 
 long_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
@@ -309,7 +311,8 @@ def update_price_queue(threadID, dict_target, security_stat, price_queue):
     logging.info(str(id) + "@" + web_xch_time + "$" + str(new_price) + '|' + str(updown_rate) + "|" + str(
         updown_pice) + "|" + dk_flag + "_" + str(dk_amount) \
                  + "|" + str(dk_value) + " gap:" + str(dk_gap) + str(price_queue))
-    return id + ' data from sinajs updated.'
+    return str(id) + '|' + str(web_xch_time) + '|' + str(new_price)
+
 
 def dk_check(threadID, dict_target, security_stat, price_queue):
     id = dict_target['stock_id']
@@ -377,7 +380,7 @@ def dk_check(threadID, dict_target, security_stat, price_queue):
 
 def in_exchage_time(stock_id_str):
     str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
-    if (int(str_time[9:16]) in range(92700, 113800) or int(str_time[9:16]) in range(125700, 150800)):
+    if (int(str_time[9:16]) in range(93000, 113000) or int(str_time[9:16]) in range(130000, 150000)):
         return True
     else:
 #        logging.info("%s error, out of exchange time.",stock_id_str)
@@ -417,16 +420,16 @@ class SecurityThread (threading.Thread):
         while(True):
             self.beat_times += 1
             if  not in_exchage_time(self.dict_target['stock_id']):
-                time.sleep(5)
+                time.sleep(3)
                 print('not in exchange %d'%(self.beat_times))
                 continue
             logging.info(update_price_queue(self.threadID, self.dict_target,self.security_stat,self.price_queue))
             logging.info(dk_check(self.threadID, self.dict_target,self.security_stat,self.price_queue))
 
-            logging.info('%s %s',id, n_elements_average(self.price_queue[:8],4))
-            logging.info('%s 4p slope_average:%s',id, slope_of_price_average(self.price_queue[:8],4))
-            logging.info('%s %s',id, n_elements_average(self.price_queue[:6],2))
-            logging.info('%s 2p slope_average:%s',id, slope_of_price_average(self.price_queue[:4],2))
+#            logging.info('%s %s',id, n_elements_average(self.price_queue[:8],4))
+#            logging.info('%s 4p slope_average:%s',id, slope_of_price_average(self.price_queue[:8],4))
+#            logging.info('%s %s',id, n_elements_average(self.price_queue[:6],2))
+#            logging.info('%s 2p slope_average:%s',id, slope_of_price_average(self.price_queue[:4],2))
 
 
             if self.security_stat['bool_dk_fit']:
@@ -434,7 +437,7 @@ class SecurityThread (threading.Thread):
                     logging.info(self.dict_target['stock_id'] +' dk_fitted, onduty is False.')
                     time.sleep(3)
                     continue
-                logging.info(self.dict_target['stock_id'] + ' dk_fitted, exchage_done:' + str(self.security_stat['exchage_done']) )
+#                logging.info(self.dict_target['stock_id'] + ' dk_fitted, exchage_done:' + str(self.security_stat['exchage_done']) )
                 if (not self.security_stat['exchage_done']) and in_exchage_time(self.dict_target['stock_id']):
                     logging.info('time is ok, ready for do it...')
                     if 'buy' in self.dict_target['dk_flag']:
@@ -465,6 +468,12 @@ class SecurityThread (threading.Thread):
 if __name__ == '__main__':
     read_configure('conf.ini')
     show_setting()
+
+    df = pd.read_csv(r'F:\dev\GitHub\security\book1.csv')
+    macd_value = calc_MACD(df, 12, 26, 9)
+    print(macd_value.loc[len(macd_value)-1])
+
+#    exit()
 
     # threadList = target_id
     # nameList = target_name
