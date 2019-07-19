@@ -449,8 +449,8 @@ class SecurityThread (threading.Thread):
             
             t_list = [self.k_cell_time,self.k_cell_open,self.k_cell_high,self.k_cell_low,self.k_cell_close,self.k_cell_volumn-self.last_volumn]
             self.k_l.append(t_list)
-            print(self.k_l)
-            print('fix---time_k %s open%.2f high%.2f low%.2f close%.2f volumn%d'%(self.k_cell_time,\
+            logging.info(self.k_l)
+            logging.info('fix---time_k %s open%.2f high%.2f low%.2f close%.2f volumn%d'%(self.k_cell_time,\
                 self.k_cell_open,self.k_cell_high,self.k_cell_low,self.k_cell_close,self.k_cell_volumn))
             self.k_cell_time = curr_list[1][0:5]
             self.last_volumn = self.k_cell_volumn
@@ -466,7 +466,7 @@ class SecurityThread (threading.Thread):
         while(True):
             self.beat_times += 1
             if  not in_exchage_time(self.dict_target['stock_id']):
-                time.sleep(3)
+                time.sleep(9)
                 print('not in exchange %d'%(self.beat_times))
                 continue
             curr_str = update_price_queue(self.threadID, self.dict_target,self.security_stat,self.price_queue)
