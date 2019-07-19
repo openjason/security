@@ -286,6 +286,7 @@ def update_price_queue(threadID, dict_target, security_stat, price_queue):
     updown_pice = round(new_price - lastday_price,3)
     updown_rate = round((updown_pice / lastday_price)*100,2)
     web_xch_time = new_price_str_lst[31]
+    last_volumn = int(new_price_str_lst[8])
 
     security_stat['updown_price'] = updown_pice
     security_stat['updown_rate'] = updown_rate
@@ -308,10 +309,10 @@ def update_price_queue(threadID, dict_target, security_stat, price_queue):
     price_queue.insert(0,new_price)
 
     # 记录全部交易类型的日志。
-    logging.info(str(id) + "@" + web_xch_time + "$" + str(new_price) + '|' + str(updown_rate) + "|" + str(
-        updown_pice) + "|" + dk_flag + "_" + str(dk_amount) \
-                 + "|" + str(dk_value) + " gap:" + str(dk_gap) + str(price_queue))
-    return str(id) + '|' + str(web_xch_time) + '|' + str(new_price)
+    #logging.info(str(id) + "@" + web_xch_time + "$" + str(new_price) + '|' + str(updown_rate) + "|" + str(
+    #    updown_pice) + "|" + dk_flag + "_" + str(dk_amount) \
+    #             + "|" + str(dk_value) + " gap:" + str(dk_gap) + str(price_queue))
+    return str(id) + '|' + str(web_xch_time) + '|' + str(new_price) + '|' + str(last_volumn)
 
 
 def dk_check(threadID, dict_target, security_stat, price_queue):
@@ -406,6 +407,12 @@ def slope_of_price_average(my_list,n):
         slope_o_p = 0
     return slope_o_p
 
+def curr_to_list(k_list,curr_str):
+    k_list_last = k_list[len(k_list)]
+    curr_list = curr_str.split('|')
+    pass
+    
+
 class SecurityThread (threading.Thread):
     def __init__(self, threadID, dict_target):
         threading.Thread.__init__(self)
@@ -413,7 +420,46 @@ class SecurityThread (threading.Thread):
         self.dict_target = dict_target
         self.security_stat = {'exchage_done':False, 'bool_dk_fit':False}
         self.price_queue = [0]*12
+        self.k_list = []
         self.beat_times = 0
+        self.k_cell_time = '09:00'
+        self.k_cell_open =0.0
+        self.k_cell_high =0.0
+        self.k_cell_low =0.0
+        self.k_cell_close =0.0
+        self.k_cell_volumn =0
+        self.last_volumn = 0
+        self.k_l = []
+    def k_cell_construction(self, curr_str):
+        curr_list = curr_str.split("|")
+        self.k_cell_volumn = int(curr_list[3])
+        curr_price = float(curr_list[2])
+        if self.k_cell_time == curr_list[1][0:5]:
+            self.k_cell_close = curr_price
+            if self.k_cell_high < curr_price:
+                self.k_cell_high = curr_price
+            if self.k_cell_low > curr_price:
+                self.k_cell_low = curr_price
+
+            #print(self.k_cell_time,self.k_cell_open,self.k_cell_high,self.k_cell_low,self.k_cell_close,self.k_cell_volumn)
+            print('time_k %s open%.2f high%.2f low%.2f close%.2f volumn%d'%(self.k_cell_time,\
+                self.k_cell_open,self.k_cell_high,self.k_cell_low,self.k_cell_close,self.k_cell_volumn))
+
+        else:
+            
+            t_list = [self.k_cell_time,self.k_cell_open,self.k_cell_high,self.k_cell_low,self.k_cell_close,self.k_cell_volumn-self.last_volumn]
+            self.k_l.append(t_list)
+            print(self.k_l)
+            print('fix---time_k %s open%.2f high%.2f low%.2f close%.2f volumn%d'%(self.k_cell_time,\
+                self.k_cell_open,self.k_cell_high,self.k_cell_low,self.k_cell_close,self.k_cell_volumn))
+            self.k_cell_time = curr_list[1][0:5]
+            self.last_volumn = self.k_cell_volumn
+
+            self.k_cell_open = curr_price
+            self.k_cell_high = self.k_cell_open
+            self.k_cell_low = self.k_cell_open
+            self.k_cell_close = self.k_cell_open
+
     def run(self):
         logging.info ("开启线程：" + self.dict_target['name'])
         id = self.dict_target['stock_id']
@@ -423,8 +469,10 @@ class SecurityThread (threading.Thread):
                 time.sleep(3)
                 print('not in exchange %d'%(self.beat_times))
                 continue
-            logging.info(update_price_queue(self.threadID, self.dict_target,self.security_stat,self.price_queue))
-            logging.info(dk_check(self.threadID, self.dict_target,self.security_stat,self.price_queue))
+            curr_str = update_price_queue(self.threadID, self.dict_target,self.security_stat,self.price_queue)
+            self.k_cell_construction(curr_str)
+
+            #logging.info(dk_check(self.threadID, self.dict_target,self.security_stat,self.price_queue))
 
 #            logging.info('%s %s',id, n_elements_average(self.price_queue[:8],4))
 #            logging.info('%s 4p slope_average:%s',id, slope_of_price_average(self.price_queue[:8],4))
