@@ -1,3 +1,5 @@
+#http://hq.sinajs.cn/list=hkHSCEI 没有可查询数据的列表
+
 import urllib.request
 import re
 import time
