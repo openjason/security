@@ -26,7 +26,7 @@ def getHtml(url):
 
 
 def getTable(html):
-    s = r'(?<=<table class="datatbl" id="datatbl">)([\s\S]*?)(?=</table>)'
+    s = r'(?<=<table class="table_bg001 border_box limit_sale">)([\s\S]*?)(?=</table>)'
     pat = re.compile(s)
     code = pat.findall(html)
     return code
@@ -47,8 +47,10 @@ def getTitle(tableString):
 
 def getBody(tableString):
     s = r'(?<=<tbody)>.*?([\s\S]*?)(?=</tbody>)'
+    s = r'(?<=</thead)>.*?([\s\S]*?)(?=</tr></tr>)'
     pat = re.compile(s)
     code = pat.findall(tableString)
+    code[0] = code[0] + '</tr></tr>' # 因为上面的表达是不包含此串，导致字符没有完整，加上，正则可返回匹配串？
     s2 = r'(?<=<tr).*?>([\s\S]*?)(?=</tr>)'
     pat2 = re.compile(s2)
     code2 = pat2.findall(code[0])
@@ -63,18 +65,11 @@ def getBody(tableString):
 def his_daily_from_163(ticker_symbol, tran_date, temp_save_filename):
     # 股票代码
     symbol = ticker_symbol
-    # 日期
-#    dateObj = datetime.datetime(2018, 8, 31)
-    #tran_date = dateObj.strftime("%Y-%m-%d")
-
     fp = open(temp_save_filename,'w')
-
     # 页码，因为不止1页，从第一页开始爬取
-    page = 1
-
-    while True:
-        Url = 'http://market.finance.sina.com.cn/transHis.php?symbol=' + symbol + '&date=' + tran_date + '&page=' + str(            page)
-        Url = 'http://quotes.money.163.com/trade/lsjysj_' + symbol + '.html?year=' + tran_date + '&season=' + str(page)
+    season = 1 #4 季度，爬4次
+    while season < 5:
+        Url = 'http://quotes.money.163.com/trade/lsjysj_' + symbol + '.html?year=' + tran_date + '&season=' + str(season)
         #http: // quotes.money.163.com / trade / lsjysj_000063.html?year = 2019 & season = 4
         html = getHtml(Url).decode('utf-8')
         with open('html_temp.log','w',encoding='utf-8') as out_put_file:
@@ -85,19 +80,20 @@ def his_daily_from_163(ticker_symbol, tran_date, temp_save_filename):
             if len(tbody) == 0:
                 print("结束")
                 break
-            if page == 1:
-                thead = getTitle(table[0])
-                print(thead)
-                fp.writelines(str(thead)+'\n')
+            tbody.reverse() #列表倒置，按时间排序
+            #if season == 1:#表头 无用
+            #    thead = getTitle(table[0])
+            #    print(thead)
+            #    fp.writelines(str(thead)+'\n')
             for tr in tbody:
                 print(tr)
                 fp.writelines(str(tr)+'\n')
             time.sleep(2)
         else:
-            print("当日无数据")
+            print("无数据")
             break
-        page += 1
+        season += 1
     fp.close()
 
 if __name__ == '__main__':
-    his_daily_from_163('300059', '2018', '300059_2010.txt')
+    his_daily_from_163('300059', '2018', '300059_2010.log')
