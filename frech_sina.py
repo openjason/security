@@ -58,7 +58,7 @@ def getBody(tableString):
 
 def his_daily_from_sina(ticker_symbol, tran_date, temp_save_filename):
     # 股票代码
-    symbol = 'sz300750'
+    symbol = ticker_symbol
     # 日期
 #    dateObj = datetime.datetime(2018, 8, 31)
     #tran_date = dateObj.strftime("%Y-%m-%d")
@@ -70,6 +70,7 @@ def his_daily_from_sina(ticker_symbol, tran_date, temp_save_filename):
 
     while True:
         Url = 'http://market.finance.sina.com.cn/transHis.php?symbol=' + symbol + '&date=' + tran_date + '&page=' + str(page)
+        print(Url)
         html = getHtml(Url)
         table = getTable(html)
         if len(table) != 0:
@@ -92,4 +93,4 @@ def his_daily_from_sina(ticker_symbol, tran_date, temp_save_filename):
     fp.close()
 
 if __name__ == '__main__':
-    his_daily_from_sina('sz300059', '2019-06-10', 'sz300059_0610.txt')
+    his_daily_from_sina('sz000063', '2019-11-22', 'sz300059_1122.txt')
