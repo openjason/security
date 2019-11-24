@@ -3,6 +3,7 @@ import re
 import time
 import ssl
 import http.cookiejar
+import os
 
 def getHtml(url):
     while True:
@@ -56,14 +57,13 @@ def getBody(tableString):
     return code3
 
 
-def his_daily_from_sina(ticker_symbol, tran_date, temp_save_filename):
+def his_daily_mx_from_sina(ticker_symbol, tran_date, temp_save_filename):
     # 股票代码
     symbol = ticker_symbol
-    # 日期
-#    dateObj = datetime.datetime(2018, 8, 31)
-    #tran_date = dateObj.strftime("%Y-%m-%d")
 
-    fp = open(temp_save_filename,'w')
+    if not os.path.exists(ticker_symbol):       # 判断文件夹是否存在
+        os.mkdir(ticker_symbol)                 # 创建文件夹    
+    fp = open(ticker_symbol+'\\'+temp_save_filename,'w')
 
     # 页码，因为不止1页，从第一页开始爬取
     page = 1
@@ -80,11 +80,24 @@ def his_daily_from_sina(ticker_symbol, tran_date, temp_save_filename):
                 break
             if page == 1:
                 thead = getTitle(table[0])
-                print(thead)
-                fp.writelines(str(thead)+'\n')
+                temp_str_td = ''
+                for td in thead:
+                    td=td.strip()
+                    td=td.replace(",","")
+                    temp_str_td = temp_str_td + '|' + str(td) 
+                temp_str_td = temp_str_td[1:]
+                print(temp_str_td)
+                fp.writelines(temp_str_td+'\n')
+
             for tr in tbody:
-                print(tr)
-                fp.writelines(str(tr)+'\n')
+                temp_str_td = ''
+                for td in tr:
+                    td=td.strip()
+                    td=td.replace(",","")
+                    temp_str_td = temp_str_td + '|' + str(td) 
+                temp_str_td = temp_str_td[1:]
+                print(temp_str_td)
+                fp.writelines(temp_str_td+'\n')
             time.sleep(2)
         else:
             print("当日无数据")
@@ -93,4 +106,4 @@ def his_daily_from_sina(ticker_symbol, tran_date, temp_save_filename):
     fp.close()
 
 if __name__ == '__main__':
-    his_daily_from_sina('sz000063', '2019-11-22', 'sz300059_1122.txt')
+    his_daily_mx_from_sina('sz000063', '2019-11-22', 'sz300063_1122.txt')
