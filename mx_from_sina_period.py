@@ -8,8 +8,9 @@ if __name__ == '__main__':
 
     curr_stock = 'sz300059'
 
-    date_begin = datetime.datetime(2019,7,25)
-    for i in range(350):
+    date_begin = datetime.datetime(2019,8,14)
+    date_end = datetime.datetime(2019,11,25)
+    for i in range(365):
         # Monday is 0 and Sunday is 6.
         curr_date = str(date_begin.strftime('%Y-%m-%d'))
         if date_begin.isoweekday() < 6:
@@ -20,3 +21,7 @@ if __name__ == '__main__':
             print(curr_date + ' is weekend..')
 
         date_begin = date_begin + datetime.timedelta(days=1)
+        if date_begin > date_end:
+            print("time is over. ",date_end)
+            break
+            
