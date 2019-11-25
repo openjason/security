@@ -2,39 +2,39 @@
 '''
 #docker run -d -p 3306:3306 -e MYSQL_ROOT_PASSWORD=pwd mariadb
 # docker exec -it cid /bin/bash
-
-CREATE TABLE public."300059mx" (
-    xdate date NOT NULL,
+ 
+CREATE TABLE public."000063mx" (
+    xdate TIMESTAMP NOT NULL,
     price double precision,
     pdiff double precision,
     volume double precision,
     amount double precision,
     bors character(8) DEFAULT NULL::bpchar
 );
-
+ 
 清理异常数据：
 1、price偏离股价平均价20%
 2、成交差价大于平均价2%
 3、时间重复
-
+ 
 '''
 import psycopg2
 import logging
 from conf import set_logging
-
-
-
+ 
+ 
+ 
 def writetodb(data_filename,table_name):
     BSM_dict = {'卖盘':'S','买盘':'B','中性盘':'N'}
     #print('Connecting to the database...'+conf.DBuser+'@'+conf.DBhost)
-    connection = psycopg2.connect(database="st", user="postgres", password="123456", host="192.168.17.6", port="5432")
+    connection = psycopg2.connect(database="st", user="postgres", password="123456", host="192.168.7.76", port="5432")
     print("Opened database successfully")
-    
+     
     datalist = []
     print('data_filename,table_name: ')
     print(data_filename,table_name)
-
-    with open(data_filename, 'r',encoding='gbk') as file_to_read:
+ 
+    with open(data_filename[:8]+'\\'+data_filename, 'r',encoding='gbk') as file_to_read:
         lines = file_to_read.readline()
         print('Pass the first line : ',lines)
         while True:
@@ -46,7 +46,7 @@ def writetodb(data_filename,table_name):
             datalist.append(lines)
             pass
         pass
-
+ 
     datalist.sort()
     price_sum = 0.0
     for rec_index in range(len(datalist)):#合计记录中买入价，求平均值
@@ -54,7 +54,7 @@ def writetodb(data_filename,table_name):
         price_sum = price_sum + float(onelinedata[1])
     price_average = price_sum/len(datalist)
     print('price_average :',price_average)
-
+ 
     previous_data = ''
     for rec_index in range(len(datalist)):
         onelinedata = datalist[rec_index].split('|')
@@ -86,48 +86,29 @@ def writetodb(data_filename,table_name):
             previous_data = datalist[rec_index]
             continue
         previous_data = datalist[rec_index]
-
+    datalist.sort()
     for rec_index in range(len(datalist)):
         one_line = datalist[rec_index]
         if one_line == 'removed':
             continue
         one_rec = one_line.split('|')
         rec_changed = False
-        print('rec_index,one_line: ',rec_index,one_line)
+        #print('rec_index,one_line: ',rec_index,one_line)
         if one_rec[2] == '--':
             one_rec[2] = 0
             rec_changed = True
-
-        with connection.cursor() as cursor:
-                # Create a new record
-                print(one_rec[5].strip())
-                bsm_value = BSM_dict[one_rec[5].strip()]
-                sql = 'INSERT INTO "'+str(table_name)+'" (xdate, price, pdiff, volume, amount, bors) VALUES (%s, %s, %s, %s, %s, %s)'
-                print('sql',sql)
-                cursor.execute(sql, (one_rec[0], one_rec[1], one_rec[2], one_rec[3], one_rec[4].replace(',', ''), bsm_value))
-
-
+ 
         try:
             with connection.cursor() as cursor:
                 # Create a new record
-                print(SM_dict[one_rec[5].strip()])
+                #print(one_rec[5].strip())
                 bsm_value = BSM_dict[one_rec[5].strip()]
-                sql = 'INSERT INTO "'+str(table_name)+'" (`xdate`, `price`, `pdiff`, `volume`, `amount`, `bors`) VALUES (%s, %s, %s, %s, %s, %s)'
-                print('sql',sql)
-                cursor.execute(sql, (one_rec[0], one_rec[1], one_rec[2], one_rec[3], one_rec[4].replace(',', ''), bsm_value))
-
-            # connection is not autocommit by default. So you must commit to save
-            # your changes.
-            
-
-            # with connection.cursor() as cursor:
-            #     # Read a single record
-            #     sql = "SELECT `id`, `password` FROM `users` WHERE `email`=%s"
-            #     cursor.execute(sql, ('webmaster@python.org',))
-            #     result = cursor.fetchone()
-            #     print(result)
+                sql = 'INSERT INTO "'+str(table_name)+'" (xdate, price, pdiff, volume, amount, bors) VALUES (%s, %s, %s, %s, %s, %s)'
+                xdate = data_filename[9:19]+" "+one_rec[0]
+#                print('xdate',xdate)
+                cursor.execute(sql, (xdate, one_rec[1], one_rec[2], one_rec[3], one_rec[4], bsm_value))
         except Exception as e:
-            print('Error in record,  exit(2)' + str(one_rec))
+            print('Error in record, exit(err): ' + str(one_rec))
             print(e)
             connection.close()
             exit(2)
@@ -138,7 +119,7 @@ if __name__ == '__main__':
     
     curr_stock = 'sz000063'
     curr_date = '2019-01-02'
-    curr_filename = curr_stock+'_'+curr_date[5:]+'.log'
+    curr_filename = curr_stock+'_'+curr_date+'.log'
     curr_table_name = '000063mx'
     writetodb(curr_filename,curr_table_name)
     

@@ -1,3 +1,46 @@
+#！/bin/python
+'''
+#sample: http://market.finance.sina.com.cn/transHis.php?symbol=sz300059&date=2019-08-26&page=2
+你的问题：日线数据sina也有，但都是不复权的，我用的是：http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=sz002095&scale=240&ma=no&datalen=250
+其中的参数可以改，scale单位是分钟。这个地址数据很全，开盘、收盘、最高、最低、成交量都有，遗憾的是数据不除权。
+精确的复权数据，我是从tushare上取的，tushare只支持python，不支持VBA。要是能从你提供的地址直接用VBA取就好了。
+
+新浪财经50ETF期权行情接口
+2017-01-12 09:07:41 陆子野 阅读数 10824更多
+分类专栏： 金融
+版权声明：本文为博主原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。
+本文链接：https://blog.csdn.net/u013781175/article/details/54374798
+1、获得当前有哪几个月份的合约http://stock.finance.sina.com.cn/futures/api/openapi.php/StockOptionService.getStockName
+
+      返回结果示例如下，contractMonth字段就是我们想要的数据
+
+{
+    "result":{
+        "status":{
+            "code":0
+        },
+        "data":{
+            "cateList":[
+                "50ETF",
+                "50ETF"
+            ],
+            "contractMonth":[
+                "2019-03",
+                "2019-03",
+                "2019-04",
+                "2019-06",
+                "2019-09"
+            ],
+            "stockId":"510050",
+            "cateId":"510050C1903A02400"
+        }
+    }
+}
+2、获得某个月份合约的到期日和剩余天数等http://stock.finance.sina.com.cn/futures/api/openapi.php/StockOptionService.getRemainderDay?date=20190901
+
+大家调用的时候把年和月改成上面第一个接口返回的年和月，例如2019年4月就是date=20190401，结果示例如下，expireDay字段为到期日，remainderDays字段为剩余天数
+
+'''
 import urllib.request
 import re
 import time
