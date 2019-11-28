@@ -27,7 +27,7 @@ from conf import set_logging
 def writetodb(data_filename,table_name):
     BSM_dict = {'卖盘':'S','买盘':'B','中性盘':'N'}
     #print('Connecting to the database...'+conf.DBuser+'@'+conf.DBhost)
-    connection = psycopg2.connect(database="st", user="postgres", password="123456", host="192.168.7.76", port="5432")
+    connection = psycopg2.connect(database="st", user="postgres", password="123456", host="192.168.17.6", port="5432")
     print("Opened database successfully")
      
     datalist = []
@@ -97,7 +97,20 @@ def writetodb(data_filename,table_name):
         if one_rec[2] == '--':
             one_rec[2] = 0
             rec_changed = True
- 
+        '''
+        表名需用双引号，值需要单引号。
+        with connection.cursor() as cursor:
+            # Create a new record
+            #print(one_rec[5].strip())
+            bsm_value = BSM_dict[one_rec[5].strip()]
+            xdate = data_filename[9:19]+" "+one_rec[0]
+            sql = 'INSERT INTO "'+str(table_name)+'" (xdate, price, pdiff, volume, amount, bors) '
+            sql = sql + "VALUES('"+ xdate+ "','"+ str(one_rec[1]) +"','"+str(one_rec[2])+"','"+ \
+str(one_rec[3])+"','"+str(one_rec[4])+"','"+bsm_value+"')"
+            #print(sql)
+            cursor.execute(sql)
+
+        '''
         try:
             with connection.cursor() as cursor:
                 # Create a new record
@@ -105,13 +118,15 @@ def writetodb(data_filename,table_name):
                 bsm_value = BSM_dict[one_rec[5].strip()]
                 sql = 'INSERT INTO "'+str(table_name)+'" (xdate, price, pdiff, volume, amount, bors) VALUES (%s, %s, %s, %s, %s, %s)'
                 xdate = data_filename[9:19]+" "+one_rec[0]
-#                print('xdate',xdate)
+                #print((sql, (xdate, one_rec[1], one_rec[2], one_rec[3], one_rec[4], bsm_value)))
                 cursor.execute(sql, (xdate, one_rec[1], one_rec[2], one_rec[3], one_rec[4], bsm_value))
         except Exception as e:
             print('Error in record, exit(err): ' + str(one_rec))
             print(e)
             connection.close()
             exit(2)
+        
+
     connection.commit()
     connection.close()
 if __name__ == '__main__':

@@ -6,10 +6,10 @@ from frech_sina import his_daily_mx_from_sina
 
 if __name__ == '__main__':
 
-    curr_stock = 'sz300059'
+    curr_stock = 'sz000063'
 
-    date_begin = datetime.datetime(2019,8,14)
-    date_end = datetime.datetime(2019,11,25)
+    date_begin = datetime.datetime(2019,11,19)
+    date_end = datetime.datetime(2019,11,26)
     for i in range(365):
         # Monday is 0 and Sunday is 6.
         curr_date = str(date_begin.strftime('%Y-%m-%d'))
