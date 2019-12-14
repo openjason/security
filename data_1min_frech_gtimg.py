@@ -83,15 +83,21 @@ def his_daily_1m_from_htimg(ticker_symbol, tran_date, temp_save_filename):
     if table[-1]==';':
         table = table[:-1]
         
-    four_days_str = str(eval(table))
-    print(type (four_days_str))
-    one_day_str = four_days_str[0]
+    four_days_str = eval(table)
+    one_day_str = str(four_days_str[0])
+
+    one_day_str = json.dumps(eval(one_day_str))
+    #Python的json模块解析单引号数据会报错,处理后正确解析
     
-    one_day_json = json.loads(four_days_str[0])
+    one_day_json = json.loads(one_day_str)
 
 
-    print(one_day_jason['date'])
-    print(one_day_jason['data'])
+    print(one_day_json['date'])
+    one_minute_list= one_day_json['data'].split('^')
+
+    for i in range(len(one_minute_list)):
+        print(one_minute_list[i])
+    print(one_minute_list[-2])
            
     fp.close()
 
