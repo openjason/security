@@ -1,8 +1,8 @@
 #-*- coding: utf-8 -*-
 #Author: JasonChan
-#从sianjs上读取时间，替换本机系统时间
-VERSION = "Ver: 20180710 "
+#从sianjs上读取时间，替换本机系统时间 我们
 
+VERSION = "Ver: 20201030"
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -334,7 +334,7 @@ def dk_detect():
         last_one_value = last_first_price[i]
         last_two_value = last_secondary_price[i]
 
-        time.sleep(1.7)
+        time.sleep(1.5)
         new_price_str_raw = get_from_site(httpa,httpb,httpc)
 
         if "|" in new_price_str_raw:
@@ -413,10 +413,16 @@ def dk_detect():
 
 
         #记录全部交易类型的日志。
-        logging.info(str(id)+"@"+web_time+"$"+ str(new_price)+'|'+str(updown_rate)+"|"+str(updown_pice)+"|"+dk_flag+"_"+str(dk_amount)\
-            +"|"+str(dk_value)+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value))
+        logging.info(str(new_price)+" "+str(updown_rate)+'|'+str(updown_pice)+"|"+dk_flag+"_"+str(dk_amount)\
+            +"|"+str(dk_value)+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value)+"@"+web_time)
         continue
     return 0
+
+def stock_buy(id,str1):
+    pass
+
+def stock_sale(id,str1):
+    pass
 
 def show_setting():
     for i in range(target_total):
@@ -445,10 +451,10 @@ if __name__ == "__main__":
     show_setting()
     while (True):
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
-        time.sleep(2)
-        print (str_time[9:],flush=True)
-        if (int(str_time[9:16]) in range(52800, 160800)):
+        time.sleep(3)
+        #print (str_time[9:],flush=True)
+        if (int(str_time[9:16]) in range(92800, 153000)):
             dk_detect()
         else:
             print("out of exchange time.")
-            time.sleep(14)
+            time.sleep(60)
