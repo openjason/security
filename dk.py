@@ -447,6 +447,21 @@ def is_exchage_time(i):
         logging.info(str_time + " error, out of exchange time.")
         return False
 
+def get_3index():
+    http_str = 'http://hq.sinajs.cn/list=s_sh000001,s_sz399001,s_sz399006'
+    sinajs_html = getHtml_sinajs(http_str)
+    sinajs_list = sinajs_html.split(";")
+    if len(sinajs_list)<1 :
+        logging.info('no index data')
+    else:
+        index3_str = ''
+        for i in range(len(sinajs_list)-1):
+            one_index_str = sinajs_list[i].split("=")
+            #logging.info(one_index_str[1])
+            split_index_str = one_index_str[1].split(",")
+            index3_str = index3_str + split_index_str[3] + ' '
+        logging.info(index3_str)
+
 if __name__ == "__main__":
     logging.info(VERSION)
     show_setting()
@@ -454,8 +469,8 @@ if __name__ == "__main__":
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
         time.sleep(2)
         #print (str_time[9:],flush=True)
-        if (int(str_time[9:16]) in range(82400, 173000)):
-            dk_detect()
-        else:
+        get_3index()
+        dk_detect()
+        if not (int(str_time[9:16]) in range(82400, 173000)):
             print(str_time," out of exchange time.")
             time.sleep(60)
