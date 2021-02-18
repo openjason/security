@@ -2,7 +2,7 @@
 #Author: JasonChan
 #从sianjs上读取时间，替换本机系统时间 我们
 
-VERSION = "Ver: 20201030"
+VERSION = "Ver: 20210205"
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -298,10 +298,10 @@ def get_current(http):
     return "error in get_current(http)."
 
 def price_right(value,gap):
-    if abs(gap) < (value * 0.21):
+    if abs(gap) < (value * 0.31):
         return True
     else:
-        print('Out of 20% range.')
+        print('Out of 30% range.')
         return False
 
 
@@ -447,9 +447,11 @@ def is_exchage_time(i):
         logging.info(str_time + " error, out of exchange time.")
         return False
 
+#显示3大index 
 def get_3index():
     http_str = 'http://hq.sinajs.cn/list=s_sh000001,s_sz399001,s_sz399006'
     sinajs_html = getHtml_sinajs(http_str)
+    str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
     sinajs_list = sinajs_html.split(";")
     if len(sinajs_list)<1 :
         logging.info('no index data')
@@ -460,7 +462,50 @@ def get_3index():
             #logging.info(one_index_str[1])
             split_index_str = one_index_str[1].split(",")
             index3_str = index3_str + split_index_str[3] + ' '
-        logging.info(index3_str)
+        logging.info(str_time + ' ' +index3_str)
+
+
+
+
+#显示stock 
+def get_stock():
+    
+    http_str = 'http://hq.sinajs.cn/list=sh588000,sz000636,sh600875,sz300059'
+    sinajs_html = getHtml_sinajs(http_str)
+    sinajs_list = sinajs_html.split(";")
+    if len(sinajs_list)<1 :
+        logging.info('no index data')
+    else:
+        index3_str = ''
+        for i in range(len(sinajs_list)-1):
+            one_index_str = sinajs_list[i].split("=")
+            stock_index = one_index_str[0][-6:]
+
+
+            id = ''
+            for i in range(target_total):
+            #标号 数字 显示 从 1 开始，与配置文件一致，读取配置文件标号已做处理 。
+                if stock_index == target_id[i]:
+                    dk_flag = target_dk_flag[i]
+                    dk_value = float(target_dk_value[i])
+                    dk_amount = int(target_dk_amount[i])
+                    id = target_id [i]
+                    break
+
+
+            split_index_str = one_index_str[1].split(",")
+            d2 = split_index_str[2]
+            d3 = split_index_str[3]
+            d31 = split_index_str[31]
+            data_str = str(round(100*float(d3)/float(d2)-100,2)) +' '+ d3 +' '+ d31
+            stock_index = stock_index +' '+ data_str
+            if id =='':
+                logging.info(stock_index)
+            else:
+                stock_index = stock_index +' ' + str(round(float(d3) - dk_value,2))
+                logging.info(stock_index)
+
+
 
 if __name__ == "__main__":
     logging.info(VERSION)
@@ -470,7 +515,8 @@ if __name__ == "__main__":
         time.sleep(2)
         #print (str_time[9:],flush=True)
         get_3index()
-        dk_detect()
-        if not (int(str_time[9:16]) in range(82400, 173000)):
+        get_stock()
+        #dk_detect()
+        if not (int(str_time[9:16]) in range(91700, 153000)):
             print(str_time," out of exchange time.")
             time.sleep(60)
