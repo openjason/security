@@ -2,7 +2,7 @@
 #Author: JasonChan
 #从sianjs上读取时间，替换本机系统时间 我们
 
-VERSION = "Ver: 20210205"
+VERSION = "Ver: 20210219"
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -470,7 +470,25 @@ def get_3index():
 #显示stock 
 def get_stock():
     
-    http_str = 'http://hq.sinajs.cn/list=sh588000,sz000636,sh600875,sz300059'
+
+    http_str = 'http://hq.sinajs.cn/list=s_sh000001,s_sz399001,s_sz399006'
+    sinajs_html = getHtml_sinajs(http_str)
+    str_time = time.strftime('%H%M%S', time.localtime(time.time()))
+    sinajs_list = sinajs_html.split(";")
+    if len(sinajs_list)<1 :
+        logging.info('no index data')
+    else:
+        stockindex3_str = ''
+        for i in range(len(sinajs_list)-1):
+            one_index_str = sinajs_list[i].split("=")
+            #logging.info(one_index_str[1])
+            split_index_str = one_index_str[1].split(",")
+            stockindex3_str = stockindex3_str + split_index_str[3] + ' '
+        #logging.info(str_time + ' ' +index3_str)
+    
+    
+    
+    http_str = 'http://hq.sinajs.cn/list=sh516800,sz000636,sh600875,sz002594'
     sinajs_html = getHtml_sinajs(http_str)
     sinajs_list = sinajs_html.split(";")
     if len(sinajs_list)<1 :
@@ -479,7 +497,7 @@ def get_stock():
         index3_str = ''
         for i in range(len(sinajs_list)-1):
             one_index_str = sinajs_list[i].split("=")
-            stock_index = one_index_str[0][-6:]
+            stock_index = one_index_str[0][-6:]#gupiao daima
 
 
             id = ''
@@ -497,24 +515,27 @@ def get_stock():
             d2 = split_index_str[2]
             d3 = split_index_str[3]
             d31 = split_index_str[31]
-            data_str = str(round(100*float(d3)/float(d2)-100,2)) +' '+ d3 +' '+ d31
+            rate_temp = round(100*float(d3)/float(d2)-100,2)
+            rate_str = "{0:.2f}".format(rate_temp)
+            data_str = rate_str +' '+ d3 +' '+ d31
             stock_index = stock_index +' '+ data_str
             if id =='':
                 logging.info(stock_index)
             else:
-                stock_index = stock_index +' ' + str(round(float(d3) - dk_value,2))
+                stock_index = stock_index[3:] +' ' + str(round(float(d3) - dk_value,2))
                 logging.info(stock_index)
 
+    logging.info(str_time + ' ' +stockindex3_str)
 
 
 if __name__ == "__main__":
     logging.info(VERSION)
     show_setting()
     while (True):
+        str_time = time.strftime('%H%M%S', time.localtime(time.time()))
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
         time.sleep(2)
-        #print (str_time[9:],flush=True)
-        get_3index()
+        #get_3index()
         get_stock()
         #dk_detect()
         if not (int(str_time[9:16]) in range(91700, 153000)):
